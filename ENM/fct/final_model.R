@@ -14,7 +14,7 @@ final.model <- function(sp,
                         output.folder="presfinal"){
  
     if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder))==FALSE) dir.create(paste0("./",input.folder,"/",sp,"/",output.folder))
-    cat(sp)
+    cat(sp,"\n")
  library("raster")
  library("data.table")
 cat(paste("Reading the evaluation files","\n"))

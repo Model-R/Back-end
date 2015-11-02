@@ -1,14 +1,15 @@
 
 
 ensemble <- function(sp,
-                     input.folder1,##onde estao os modelos em geral
-                     input.folder2, ##onde estao os modelos finais
+                     input.folder1,##onde estao os modelos em geral ("models")
+                     input.folder2, ##onde estao os modelos finais ("presfinal")
                      occs=spp.filt,
                      which.models=c("Final.bin.mean3","Final.mean.bin7"),
                      output.folder="ensemble"){
     
     ##aqui muda sempre entre projetos e provavelmente neste também
-    if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
+    #if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder)) ###tirei este aqui, para os ensemble ficarem dentro das pastas de espécies
+    dir.create(paste0("./",input.folder1,"/",sp,"/",output.folder,"/")) # adicionado por Guilherme -- ok!
     
     library(raster)
 ## para cada tipo de modelo    
@@ -33,7 +34,11 @@ ensemble <- function(sp,
         plot(ensemble.m,main=paste(sp,whi,"ensemble"),font.main=3)
         points(coord,pch=21,bg="grey70")
         
+        
+        # o ensemble cru
         writeRaster(ensemble.m,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble.tif"),overwrite=T)
+        ####aqui filtra 30% dos modelos e cria um binário de novo
+        writeRaster(ensemble.m>=0.3,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble30.tif"),overwrite=T)
         
         
         library(maps) 
@@ -47,21 +52,8 @@ ensemble <- function(sp,
             add=T)
         points(coord,pch=19,cex=0.8)
         dev.off()
-        ####aqui filtra 30% dos modelos e cria um binário de novo
-        writeRaster(ensemble.m>=0.3,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_","_ensemble30.grd"),overwrite=T)
-    }
-}
-
-    
-    coord <- occs[occs$sp==sp,c('lon','lat')]
-    plot(ensemble.m,main=sp,font.main=3)
-    points(coord,pch=19,cex=0.5)
-    
-        writeRaster(ensemble.m,filename=paste0("./",output.folder,"/",sp,"_ensemble.grd"),overwrite=T)
         
-        png(filename=paste0("./",output.folder,"/",sp,"_ensemble.png"))
-        plot(ensemble.m,main=sp,font.main=3)
-        dev.off()
-    
+    }
+
     return(ensemble.m)    
 }

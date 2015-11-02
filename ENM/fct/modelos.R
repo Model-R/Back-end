@@ -40,14 +40,14 @@ dismo.mod <- function(sp,
   #extrai as coordenadas de cada especie 
   coord <- occs[occs$sp==sp,c('lon','lat')]
   n <- nrow(coord)
-  #n.back <- n*2
+  n.back <- n*2 #descomentado
   #tabela de valores
-  presvals <- extract(predictors, coord)
+  presvals <- raster::extract(predictors, coord) #declarado a funcao extract do pacto raster (raster::extract)
   set.seed(seed+2)
   backgr <- randomPoints(predictors, n.back)## algun dia vamos a tener que hablar de esta selección de puntos de fondo
   
   colnames(backgr) <- c('lon', 'lat')
-  backvals <- extract(predictors, backgr)    
+  backvals <- raster::extract(predictors, backgr)    
   pa <- c(rep(1, nrow(presvals)), rep(0, nrow(backvals)))
   
   #Data partition
@@ -157,7 +157,8 @@ dismo.mod <- function(sp,
         }  
       }
     }
-      if (Domain==T){
+    
+    if (Domain==T){
         cat(paste("Domain",'\n'))
         do <- domain (predictors, pres_train)
         edo <- evaluate(pres_test,backg_test,do,predictors)
@@ -201,7 +202,6 @@ dismo.mod <- function(sp,
           }  
         }
       }  
-    
     
     if (maxent==T){ 
       cat(paste("maxent",'\n'))
@@ -505,13 +505,12 @@ dismo.mod <- function(sp,
       
     }
     
-    
-    }
-    
-    
-    
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
     write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
+    }
+    
+   #cat(paste("Saving the evaluation file...",sp,i,'\n'))
+   #write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))    
     cat("DONE",'\n')
     print(date())
   }

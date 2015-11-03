@@ -44,7 +44,7 @@ final.model <- function(sp,
     names(mod)<-paste0(sp,"Partition",1:part)
     
     #Binary by TSSth and Cut    
-    bin <- mod>stats2[,names(stats2)=="spec_sens"]#stack
+    bin <- mod>stats2[,names(stats2)==threshold]#stack
     cut <- bin * mod#stack
     
     
@@ -55,10 +55,10 @@ final.model <- function(sp,
       if (length(sel.index)>0){
         
         mod.sel<- mod[[sel.index]] #(1)
-        bin.sel<-mod.sel>stats2[,names(stats2)=="spec_sens"][sel.index] #(5)
+        bin.sel<-mod.sel>stats2[,names(stats2)==threshold][sel.index] #(5)
         cut.sel<-bin.sel*mod.sel#(8)
         
-        th.mean<-mean(stats2[,names(stats2)=="spec_sens"][sel.index])
+        th.mean<-mean(stats2[,names(stats2)==threshold][sel.index])
         
       }
       #en caso de que sea solo uno varios modelos son el mismo

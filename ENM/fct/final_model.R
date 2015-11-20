@@ -8,7 +8,7 @@ final.model <- function(sp,
                         #para select.partitions
                         mean=TRUE,
                         intersection=TRUE,
-                        #para weigh partitions
+                        #para weight partitions
                         weight.par=c("TSS","AUC"),
                         input.folder="models",
                         output.folder="presfinal"){

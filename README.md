@@ -1,1 +1,11 @@
 # ARF_spatial_planning
+
+Function dismo.mod allows to choose which predictors (stack) and which algoritms are used. The options are maxent, bioclim, domain, mahalanobis distance, glm, random forests and two svm implementations. We are still studying the differences between the two. It also allows to choose the number of partitions (default=3), and a seed for reproducibility. The output folder is where models will be stored. The projection to other datasets is partially implemented. The number of pseudoabsences can also be modified (default=500).
+
+dismo.mod produces models for every partition but does not join them. Joining partitions is performed by final_model function. In final_model, two ways of joining partitions are used. The first (select.partitions) selects the well-performing models based on the value of the TSS. The default is to select TSS above 0.6 (TSS varies between -1 and 1). The threshold parameter is set to maximize specificity and sensitivity (hence TSS) and that threshold will be used to cut the selected partitions.
+Many ways to generate the final models exist and this function creates them all, following mapa final_models.pdf.
+The second way to generate the final model (weight.partitions) weighs partitions according to their performing statistic (weight. par, either TSS or AUC). Since TSS varies between -1 and 1, partitions are weighted by TSS+1/2, that varies between 0 and 1. Since AUC varies between 0 and 1, no transformation is performed.
+The output of this function are all the ways that partitions can be joined, accordingly to mapa final_models.pdf. We are aware that this is not the ideal solution but thus user has just to pick which options suits them better.
+The ensemble function recevies the species name as parameter, then the general output folder where all model was saved and the output where final-models were stored. Which.models allow the user to select which type of models are to be averaged, we currently use "Final.bin.mean3" and "Final.mean.bin7". The function selects those models and averages them, saving them in the specified output.folder= (default= "ensemble").
+
+Any further operation may be performed manually, such as generating potential richness or checking the variation between models (by calculating the standard deviation between algorithms, for example). 

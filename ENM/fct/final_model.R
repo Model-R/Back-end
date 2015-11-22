@@ -4,10 +4,7 @@ final.model <- function(sp,
                         select.partitions=T,
                         weight.partitions=F,                        
                         threshold=c("spec_sens"),
-                        TSS.value=0.6,
-                        #para select.partitions
-                        mean=TRUE,
-                        intersection=TRUE,
+                        TSS.value=0.6,                        
                         #para weight partitions
                         weight.par=c("TSS","AUC"),
                         input.folder="models",
@@ -106,7 +103,7 @@ final.model <- function(sp,
     if (weight.partitions==TRUE){
       for (par in unique(weight.par)){
         pond.stats<-stats2[,par]
-        #if (par=="TSS") pond.stats<-(pond.stats+1)/2 será?
+        if (par=="TSS") pond.stats<-(pond.stats+1)/2 será?
         pond <- mod[[1:part]]*pond.stats
         final <- mean(pond)    
         

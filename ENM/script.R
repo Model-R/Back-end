@@ -1,4 +1,4 @@
-#source("./fct/modelos.R")
+source("./fct/modelos.R")
 #source("./fct/final_model.R")
 source("./fct/ensemble.R")
 library("raster")
@@ -36,5 +36,10 @@ sfInit(parallel=T,cpus=24)
 	sfClusterApplyLB(names.sp, ensemble, input.folder1 = "models", input.folder2 = "presfinal")
 
 sfStop()
+args(dismo.mod)
+dismo.mod(names.sp[1],maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,
+       SVM2=T, part=3, seed=2311,predictors=predictors)
 
+lapply(names.sp[1:3],dismo.mod,maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,
+       SVM2=T, part=3, seed=2311,predictors=predictors)
 q()

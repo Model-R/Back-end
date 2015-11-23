@@ -33,7 +33,7 @@ dismo.mod <- function(sp,
   #Sys.setenv(NOAWT=TRUE)
   library(rJava)
   library(maps)
-  
+  library(rgeos)
   print(date())
   
   cat(paste("Modeling",sp,"...",'\n'))
@@ -44,9 +44,29 @@ dismo.mod <- function(sp,
   #tabela de valores
   presvals <- raster::extract(predictors, coord)
   set.seed(seed+2)
-  backgr <- randomPoints(predictors, n.back)## algun dia vamos a tener que hablar de esta selección de puntos de fondo
+  #Transformando em spatial points
+  coordinates(coord) = ~lon+lat
+  #estimando buffer
+  #buffer<-gBuffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)))
+  buffer <-raster::buffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)), dissolve=TRUE)
   
+  #Transformando coords de novo em matriz para rodar resto script
+  coord <- occs[occs$sp==sp,c('lon','lat')]
+  
+  #Transformando em spatial polygon data frame
+  buffer <- SpatialPolygonsDataFrame(buffer,data=as.data.frame(buffer@plotOrder), match.ID = FALSE)
+  crs(buffer)<-crs(predictors)
+  #Reference raster com mesmo extent e resolution que predictors
+  r_buffer <- raster(ext=extent(predictors), resolution=res(predictors))
+  #Rasterizando o buffer p/ geração dos ptos aleatorios
+  r_buffer <- rasterize(buffer, r_buffer, field=buffer@plotOrder)
+  #Limitando a mascara ambiental
+  r_buffer <- r_buffer*(predictors[[1]]!=0)
+  #Gerando pontos aleatorios no buffer
+  backgr <- randomPoints(r_buffer, n.back)## algun dia vamos a tener que hablar de esta selección de puntos de fondo
   colnames(backgr) <- c('lon', 'lat')
+  
+  #Extraindo dados ambientais dos bckgr
   backvals <- raster::extract(predictors, backgr)    
   pa <- c(rep(1, nrow(presvals)), rep(0, nrow(backvals)))
   
@@ -86,7 +106,6 @@ dismo.mod <- function(sp,
     ##### Creates a .png plot of the initial dataset
     cat(paste("Plotting the dataset...",'\n'))
     extent<-extent(predictors)    
-    library(maps)
     png(filename=paste0("./",output.folder,"/",sp,"/",i,sp,"dataset.png"))
     par(mfrow=c(1,1),mar=c(5,4,3,0))
     plot(predictors[[1]]!=0,col="grey95",main=paste(sp,"part.",i),legend=F)  

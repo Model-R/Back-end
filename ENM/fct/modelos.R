@@ -30,7 +30,7 @@ dismo.mod <- function(sp,
   library(XML)
   library(raster)
   library(rgdal)
-  Sys.setenv(NOAWT=TRUE)
+  #Sys.setenv(NOAWT=TRUE)
   library(rJava)
   library(maps)
   
@@ -42,7 +42,7 @@ dismo.mod <- function(sp,
   n <- nrow(coord)
   n.back <- n*2 #descomentado
   #tabela de valores
-  presvals <- raster::extract(predictors, coord) #declarado a funcao extract do pacto raster (raster::extract)
+  presvals <- raster::extract(predictors, coord)
   set.seed(seed+2)
   backgr <- randomPoints(predictors, n.back)## algun dia vamos a tener que hablar de esta selección de puntos de fondo
   
@@ -55,7 +55,7 @@ dismo.mod <- function(sp,
   set.seed(seed)#reproducibility
   group <- kfold(coord,part)
   set.seed(seed+1)    
-  bg.grp<-kfold(backgr,part)
+  bg.grp <- kfold(backgr,part)
   group.all <- c(group,bg.grp)
   
   pres <- cbind(coord,presvals)
@@ -104,7 +104,7 @@ dismo.mod <- function(sp,
     #faz os modelos
     
     cat(paste("Modeling",sp,"Partition",i,'\n'))
-    eval<-data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)    
+    eval <- data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)    
     
     if (Bioclim==T){
       cat(paste("Bioclim",'\n'))
@@ -123,7 +123,7 @@ dismo.mod <- function(sp,
       thbc$algoritmo<-"BioClim"
       thbc$partition<-i
       row.names(thbc)<-paste(sp,i,"BioClim")
-      eval<-thbc
+      eval<-rbind(eval,thbc)
       writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -213,6 +213,7 @@ dismo.mod <- function(sp,
       png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
       response(mx)
       dev.off()
+      
       emx <- evaluate(pres_test,backg_test,mx,predictors)
       thresholdmx <- emx@t[which.max(emx@TPR + emx@TNR)]
       thmx<-threshold(emx)
@@ -425,7 +426,11 @@ dismo.mod <- function(sp,
       svm_cont <- predict(predictors,svm,progress='text')
       svm_bin <- svm_cont>thresholdsvm
       svm_cut <- svm_bin*svm_cont
-      #svm_cut <- svm_cut/maxValue(svm_cut)
+      
+      #TRANSFORMA 0 A 1
+      svm_cont <- svm_cont/maxValue(svm_cont) 
+      svm2_cut <- svm2_cut/maxValue(svm2_cut)
+      
       
       writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm_bin,filename=paste0("./",output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
@@ -444,6 +449,7 @@ dismo.mod <- function(sp,
           svm_proj <- predict(data2,svm,progress='text') 
           svm_proj_bin <- svm_proj > thresholdsvm                    	
           svm_proj_cut <- svm_proj_bin * svm_proj
+          
           # Normaliza o modelo cut
           #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
           
@@ -472,10 +478,13 @@ dismo.mod <- function(sp,
       row.names(thsvm2)<-paste(sp,i,"svm2")
       eval<-rbind(eval,thsvm2)
       svm2_cont <- predict(predictors,svm2,progress='text')
-      
       svm2_bin <- svm2_cont>thresholdsvm2
       svm2_cut <- svm2_bin*svm2_cont
-      #svm2_cut <- svm2_cut/maxValue(svm2_cut)
+      
+      #TRANSFORMA 0 A 1
+      svm2_cont <- svm2_cont/maxValue(svm2_cont) 
+      svm2_cut <- svm2_cut/maxValue(svm2_cut)
+      
       writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -506,7 +515,7 @@ dismo.mod <- function(sp,
     }
     
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
-    write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
+    write.table(eval[-1,],file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
     }
     
    #cat(paste("Saving the evaluation file...",sp,i,'\n'))

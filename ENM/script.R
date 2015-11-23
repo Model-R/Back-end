@@ -39,12 +39,13 @@ sfInit(parallel=T,cpus=24)
 sfStop()
 args(dismo.mod)
 
-dismo.mod(names.sp[1],maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,       SVM2=T, part=3, seed=2311,predictors=predictors)
+lapply(names.sp[1:10],dismo.mod,maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,       SVM2=T, part=3, seed=2311,predictors=predictors)
+lapply(names.sp[1:10],final.model,select.partitions=T,weight.partitions = T)
+lapply(names.sp[1:10],ensemble)
+args(ensemble)
 
-args(final.model)
-final.model(names.sp[1],select.partitions=T,weight.partitions = T)
 plot(mean(bin.sel))
 
-lapply(names.sp[1:3],dismo.mod,maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,
+lapply(names.sp[1:10],dismo.mod,maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,
        SVM2=T, part=3, seed=2311,predictors=predictors)
 q()

@@ -448,7 +448,7 @@ dismo.mod <- function(sp,
       
       #TRANSFORMA 0 A 1
       svm_cont <- svm_cont/maxValue(svm_cont) 
-      svm2_cut <- svm2_cut/maxValue(svm2_cut)
+      svm_cut <- svm_cut/maxValue(svm_cut)
       
       
       writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)

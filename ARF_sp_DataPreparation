@@ -15,9 +15,32 @@
 --##saindo do R
 quit()
 --##
+##DATA PREPARATION
+--##
+--##Using data from SDM a regular vector grid was created. Before running analysis, the external grids were deleted:
+--##Removing the externar grid (using R)
+library(RPostgreSQL)
+con<-dbConnect(drv="PostgreSQL", host="localhost", port=5432, dbname="iis", user="postgres", password="postgres")
+for (i in 1:500){
+start=Sys.time()
+print(i)
+Dados_Disponíveis<-dbGetQuery(con, "DELETE from public.grid_priori_ma where gid in (select gid from public.grid_priori_ma where st_disjoint(geom, (select st_transform(b.geom, 4674) from biorregioes.ma_1148 as b)) limit 10000);")
+print(Sys.time()-start)
+}
+
+
+#Changing the schema
+ALTER TABLE grids.grid_priori_ma SET SCHEMA grids;
+
+#Creating spatial index
+CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
+
+--## First layer: raster with total forest area remnant.
+pgsql2shp -f ~/Projetos/Norad/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_transform(st_intersection(g.geom, f.geom),102033)))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g inner join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
+
 
 #####
-##DATA PREPARATION
+##DATA CONVERSION
 #####
 #ENVIRONMENTAL DATA
 #####
@@ -25,3 +48,10 @@ quit()
 gdalwarp -dstnodata 0 -s_srs EPSG:4326 -t_srs '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs' -tr 300 -300 -te 207854.7456856556236744 -215734.5566306179389358 2738654.7456856556236744 3207565.4433693820610642 -q -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp -crop_to_cutline -of GTiff /home/felipe/Projetos/Norad/Priorizazao_restauracao/niche_models/FinalTSS-w_Abarema_brachystachya_maxent_.gri_.tif /home/felipe/Projetos/Norad/Priorizazao_restauracao/teste_300.tif
 
 gdalwarp -dstnodata 0 -s_srs EPSG:4326 -t_srs '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs' -tr 50 -50 -te 207854.7456856556236744 -215684.5566306179389358 2738804.7456856556236744 3207565.4433693820610642 -q -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp -crop_to_cutline -of GTiff /home/felipe/Projetos/Norad/Priorizazao_restauracao/niche_models/FinalTSS-w_Abarema_brachystachya_maxent_.gri_.tif /home/felipe/Projetos/Norad/Priorizazao_restauracao/teste_50.tif
+
+
+
+#####
+#Rasterizando Mata Atlantica
+
+gdal_rasterize -a FID -tr 0.01 0.01 -l Bioma_MA1148 -te -74.02056 -29.83056 -33.7539 5.286104 /home/felipe/Projetos/ARF_spatial_planning/Bioma_MA1148.shp /home/felipe/Projetos/ARF_spatial_planning/Bioma_MA1148.tif

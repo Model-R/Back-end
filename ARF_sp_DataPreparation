@@ -6,17 +6,16 @@
 #Institution: International Institute for Sustainability (IIS-Rio.org)
 #
 # this script was developed to assure that all rasters has the same propreties:
-# Origin: 207855, 3.20757e+06
-# Pixel resolution: 300, 300 and 50, 50
-#Raster Extent: 207854.7456856556236744 -215734.5566306179389358 2738654.7456856556236744 3207565.4433693820610642
-#SRC (Albers): +proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs
+# Origin: -57.893, -2.80871
+# Pixel resolution: 0.01, 0.01 (in decimal degrees)
+#Raster Extent: -57.8930144637443078, -33.7587136810458617, -34.8230144637443075, -2.8087136810458628
+#SRC (WGS84): +proj=longlat +datum=WGS84 +no_defs
 #
 ###############
 --##saindo do R
 quit()
 --##
 ##DATA PREPARATION
---##
 --##Using data from SDM a regular vector grid was created. Before running analysis, the external grids were deleted:
 --##Removing the externar grid (using R)
 library(RPostgreSQL)
@@ -28,7 +27,6 @@ Dados_Disponíveis<-dbGetQuery(con, "DELETE from public.grid_priori_ma where gid
 print(Sys.time()-start)
 }
 
-
 #Changing the schema
 ALTER TABLE grids.grid_priori_ma SET SCHEMA grids;
 
@@ -36,8 +34,12 @@ ALTER TABLE grids.grid_priori_ma SET SCHEMA grids;
 CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
 
 --## First layer: raster with total forest area remnant.
-pgsql2shp -f ~/Projetos/Norad/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_transform(st_intersection(g.geom, f.geom),102033)))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g inner join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
+pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_transform(st_intersection(g.geom, f.geom),102033)))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g inner join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
 
+pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_intersection(st_transform(g.geom, 102033), st_transform(f.geom,102033))))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g left outer join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
+
+--##Converting to raster
+gdal_rasterize -a code -tr 0.01 0.01 -a_nodata 999 -l forest.area -te -57.8930144637443078 -33.7587136810458617 -34.8230144637443075 -2.8087136810458628 ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp ~/Projetos/ARF_spatial_planning/final_layers/forest.area.tif
 
 #####
 ##DATA CONVERSION

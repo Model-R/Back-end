@@ -16,7 +16,10 @@
 quit()
 --##
 ##DATA PREPARATION
---##Using data from SDM a regular vector grid was created. Before running analysis, the external grids were deleted:
+--##Using data from SDM a regular vector grid was created and imported to PgSQL:
+shp2pgsql -W LATIN1 -s 102033 grid_priori_ma_Albers.shp public.grid_priori_ma_Albers>grid_modelos.sql
+
+. Before running analysis, the external grids were deleted:
 --##Removing the externar grid (using R)
 library(RPostgreSQL)
 con<-dbConnect(drv="PostgreSQL", host="localhost", port=5432, dbname="iis", user="postgres", password="postgres")
@@ -30,13 +33,32 @@ print(Sys.time()-start)
 #Changing the schema
 ALTER TABLE grids.grid_priori_ma SET SCHEMA grids;
 
+--##Adequação de geometrias:
+ALTER TABLE grids.grid_priori_ma ADD COLUMN geom_albers geometry(MultiPolygon,102033);
+ALTER TABLE sos_ma.remanescentes_2011_2012 ADD COLUMN geom_albers geometry(MultiPolygon,102033);
+--##Transformando geom p albers
+UPDATE grids.grid_priori_ma  SET geom_albers=ST_Transform(geom,102033); 
+UPDATE sos_ma.remanescentes_2011_2012  SET geom_albers=ST_Transform(geom,102033); 
+
 #Creating spatial index
 CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
+CREATE INDEX grid_priori_ma_geom_albers_gist ON grids.grid_priori_ma USING GIST (geom_albers);
+CREATE INDEX rem_11_12_albers_gist ON sos_ma.remanescentes_2011_2012 USING GIST (geom_albers);
+
 
 --## First layer: raster with total forest area remnant.
+DROP TABLE IF EXISTS public.percent_remnant_area;
+	CREATE TABLE public.percent_remnant_area as select row_number () over () as id, round(sum(st_area(st_intersection(g.geom_albers, f.geom_albers)))::numeric/10000,2) as code, g.geom_albers 
+	from grids.grid_priori_ma as g 
+	left join sos_ma.remanescentes_2011_2012 as f 
+	on ((g.geom_albers && f.geom_albers) and st_intersects(g.geom_albers, f.geom_albers)) where f.legenda <> 'Área urbana' Group by g.geom_albers
+
+
 pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_transform(st_intersection(g.geom, f.geom),102033)))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g inner join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
 
-pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_intersection(st_transform(g.geom, 102033), st_transform(f.geom,102033))))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g left outer join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
+
+--##Test with left join
+pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_intersection(g.geom_albers, f.geom_albers)))::numeric/10000,2) as code, g.geom_albers from grids.grid_priori_ma as g left join sos_ma.remanescentes_2011_2012 as f on ((g.geom_albers && f.geom_albers) and st_intersects(g.geom_albers, f.geom_albers)) where f.legenda <> 'Área urbana' Group by g.geom_albers"
 
 --##Converting to raster
 gdal_rasterize -a code -tr 0.01 0.01 -a_nodata 999 -l forest.area -te -57.8930144637443078 -33.7587136810458617 -34.8230144637443075 -2.8087136810458628 ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp ~/Projetos/ARF_spatial_planning/final_layers/forest.area.tif

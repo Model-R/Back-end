@@ -32,8 +32,7 @@ dismo.mod <- function(sp,
   library(XML)
   library(raster)
   library(rgdal)
-  #Sys.setenv(NOAWT=TRUE)
-  library(rJava)
+  
   library(maps)
   library(rgeos)
   print(date())
@@ -234,6 +233,8 @@ dismo.mod <- function(sp,
 
     if (maxent==T){
       cat(paste("maxent",'\n'))
+      #Sys.setenv(NOAWT=TRUE)
+      library(rJava)
       mx <- maxent (predictors, pres_train)
       png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
       plot(mx)

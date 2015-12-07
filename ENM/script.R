@@ -6,6 +6,14 @@ library("raster")
 library("XML")
 library("snowfall")
 library("rJava")
+
+####eigenvariables
+source("./fct/eigenvariables.fct.R")
+library(raster)
+var<-stack(list.files(path='../1km/', pattern='.asc$', full.names = TRUE))
+eigenvariables.fct(var, '1Km_', .95)
+#####
+
 predictors <-  stack(list.files("./env",full.names = T)[1])
 ####Ler os dados de ocorrencia - tabela por registro----
 registros<-read.csv("./data/Atlantic_Domain_Ari_RevTaxon_Final.csv",sep=";")
@@ -19,7 +27,8 @@ registros2 <- cbind(registros,spp.env)
 #cria a coluna de nomes
 registros2$sp <- paste(registros2$genero,registros2$especie)
 
-head(registros2)[,1:6]
+head(registros2)
+
 dim(registros2)
 
 #filtra pelo ambiente, os casos (linhas da tabela ambiental que estejam completos)
@@ -66,14 +75,14 @@ dim(occs)
 #
 # sfStop()
 args(dismo.mod)
-N <- sample(1:2115,2)
+N <- sample(1:2117,100)
 lapply(names.sp[N],
        dismo.mod,
        occs = spp.filt,
        predictors = predictors,
        buffer = T,
        buffer.type ="max",
-       maxent = T,
+       maxent = F,
        Bioclim = T,
        Domain = F,
        Mahal = F,

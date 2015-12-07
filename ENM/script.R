@@ -66,21 +66,24 @@ dim(occs)
 #
 # sfStop()
 args(dismo.mod)
-N <- sample(1:2115,100)
+N <- sample(1:2115,2)
 lapply(names.sp[N],
        dismo.mod,
        occs = spp.filt,
        predictors = predictors,
+       buffer = T,
+       buffer.type ="max",
        maxent = T,
        Bioclim = T,
-       Domain = T,
-       Mahal = T,
+       Domain = F,
+       Mahal = F,
        GLM = T,
        RF = T,
        SVM = T,
        SVM2 = T,
        part = 3,
-       seed = 712)
+       seed = 712,
+       output.folder = "buffermax")
 lapply(names.sp[1:10],final.model,select.partitions=T,weight.partitions = T)
 lapply(names.sp[1:10],ensemble)
 args(ensemble)

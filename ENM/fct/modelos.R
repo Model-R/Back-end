@@ -1,23 +1,25 @@
 dismo.mod <- function(sp,
-                      occs=spp.filt,#complete occurrence table
-                      predictors=predictors,
-                      maxent=F,
-                      Bioclim=T,
-                      Domain=F,
-                      Mahal=F,
-                      GLM=F,
-                      RF=F,
-                      SVM=F,
-                      SVM2=F,
-                      part=3,
-                      seed=NULL,#for reproducibility purposes         
-                      output.folder="models",
-                      project.model=F,
-                      projections=NULL,
-                      projdata=NULL,#um vector con nombres
-                      #stack_gcms="future_vars", # Lista dos stacks de cada GCM. Ex: stack1<-stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                      n.back=500){
-  
+                      occs = spp.filt,#complete occurrence table
+                      predictors = predictors,
+                      buffer = TRUE,
+                      buffer.type = "mean",#"max"
+                      maxent = F,
+                      Bioclim = T,
+                      Domain = F,
+                      Mahal = F,
+                      GLM = F,
+                      RF = F,
+                      SVM = F,
+                      SVM2 = F,
+                      part = 3,
+                      seed = NULL,#for reproducibility purposes
+                      output.folder = "models",
+                      project.model = F,
+                      projections = NULL,
+                      projdata = NULL,#um vector con nombres
+                      #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1<-stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                      n.back = 500){
+
   if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
   if (file.exists(paste0("./",output.folder,"/",sp))==FALSE) dir.create(paste0("./",output.folder,"/",sp))
   if (project.model==T) {
@@ -25,7 +27,7 @@ dismo.mod <- function(sp,
       if (file.exists(paste0("./",output.folder,"/",sp,"/",proj))==FALSE) dir.create(paste0("./",output.folder,"/",sp,"/",proj))
     }
   }
-  
+
   library(dismo)
   library(XML)
   library(raster)
@@ -35,24 +37,30 @@ dismo.mod <- function(sp,
   library(maps)
   library(rgeos)
   print(date())
-  
+
   cat(paste("Modeling",sp,"...",'\n'))
-  #extrai as coordenadas de cada especie 
+  #extrai as coordenadas de cada especie
   coord <- occs[occs$sp==sp,c('lon','lat')]
   n <- nrow(coord)
   n.back <- n*2 #descomentado
   #tabela de valores
   presvals <- raster::extract(predictors, coord)
   set.seed(seed+2)
-  #Transformando em spatial points
+ if (buffer == FALSE) backgr <- randomPoints(predictors, n.back)
+  if (buffer == TRUE){
+   #Transformando em spatial points
   coordinates(coord) = ~lon+lat
+
+
   #estimando buffer
   #buffer<-gBuffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)))
-  buffer <-raster::buffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)), dissolve=TRUE)
-  
+  if(buffer.type == "mean") dist.buf <-  mean(spDists(x=coord, longlat = FALSE, segments = TRUE))
+  if(buffer.type == "max") dist.buf <-  max(spDists(x=coord, longlat = FALSE, segments = TRUE))
+  buffer <-raster::buffer(coord, width=dist.buf, dissolve=TRUE)
+
   #Transformando coords de novo em matriz para rodar resto script
   coord <- occs[occs$sp==sp,c('lon','lat')]
-  
+
   #Transformando em spatial polygon data frame
   buffer <- SpatialPolygonsDataFrame(buffer,data=as.data.frame(buffer@plotOrder), match.ID = FALSE)
   crs(buffer)<-crs(predictors)
@@ -63,52 +71,54 @@ dismo.mod <- function(sp,
   #Limitando a mascara ambiental
   r_buffer <- r_buffer*(predictors[[1]]!=0)
   #Gerando pontos aleatorios no buffer
-  backgr <- randomPoints(r_buffer, n.back)## algun dia vamos a tener que hablar de esta selección de puntos de fondo
+  backgr <- randomPoints(r_buffer, n.back)
+  }
+
   colnames(backgr) <- c('lon', 'lat')
-  
+
   #Extraindo dados ambientais dos bckgr
-  backvals <- raster::extract(predictors, backgr)    
+  backvals <- raster::extract(predictors, backgr)
   pa <- c(rep(1, nrow(presvals)), rep(0, nrow(backvals)))
-  
+
   #Data partition
   if (n<11) part<-n else part <-part
   set.seed(seed)#reproducibility
   group <- kfold(coord,part)
-  set.seed(seed+1)    
+  set.seed(seed+1)
   bg.grp <- kfold(backgr,part)
   group.all <- c(group,bg.grp)
-  
+
   pres <- cbind(coord,presvals)
   back <- cbind(backgr,backvals)
   rbind_1 <- rbind(pres,back)
   sdmdata <- data.frame(cbind(group.all,pa,rbind_1))
   write.table(sdmdata,file = paste0("./",output.folder,"/",sp,"/sdmdata.txt"))
-  
-  
+
+
   #####Hace los modelos
   for (i in unique(group)){
     cat(paste(sp,"partition number",i,'\n'))
     pres_train <- coord[group != i, ]
     if(n==1)pres_train<-coord[group==i,]
     pres_test <- coord[group == i, ]
-    
+
     backg_train <- backgr[bg.grp != i,]#not used?
     backg_test <- backgr[bg.grp == i,]#new
-    
+
     sdmdata_train <- subset(sdmdata,group!=i)#new
     sdmdata_test <- subset(sdmdata,group ==i)#new
-    
+
     envtrain <- subset(sdmdata_train,select= c(-group,-lon,-lat))#new
     envtest <- subset(sdmdata_test,select=c(-group,-lon,-lat))
     envtest_pre <- subset(sdmdata_test,pa==1,select= c(-group,-lon,-lat,-pa))#new
     envtest_back <- subset(sdmdata_test,pa==0,select= c(-group,-lon,-lat,-pa))#new
-    
+
     ##### Creates a .png plot of the initial dataset
     cat(paste("Plotting the dataset...",'\n'))
-    extent<-extent(predictors)    
+    extent<-extent(predictors)
     png(filename=paste0("./",output.folder,"/",sp,"/",i,sp,"dataset.png"))
     par(mfrow=c(1,1),mar=c(5,4,3,0))
-    plot(predictors[[1]]!=0,col="grey95",main=paste(sp,"part.",i),legend=F)  
+    plot(predictors[[1]]!=0,col="grey95",main=paste(sp,"part.",i),legend=F)
     map('world',c('',"South America"),xlim=c(extent@xmin,extent@xmax),ylim=c(extent@ymin,extent@ymax),add=T)
     points(pres_train,pch=21,bg="red")
     points(pres_test,pch=21,bg="blue")
@@ -116,15 +126,15 @@ dismo.mod <- function(sp,
     points(backg_test,pch=3,col="blue",cex=0.3)
     legend("topright",pch=c(21,21,3,3),pt.bg=c("red","blue"),legend=c("PresTrain","PresTest","BackTrain","BackTest"),col=c("black","black","red","blue"))
     dev.off()
-    
+
     #SSB <- ssb(pres_test,backg_train,pres_train)
     #cat("Spatial sorting bias (approaches 0 with bias)")
     #print(SSB[,1]/SSB[,2])
     #faz os modelos
-    
+
     cat(paste("Modeling",sp,"Partition",i,'\n'))
-    eval <- data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)    
-    
+    eval <- data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)
+
     if (Bioclim==T){
       cat(paste("Bioclim",'\n'))
       bc <- bioclim (predictors, pres_train)
@@ -133,7 +143,7 @@ dismo.mod <- function(sp,
       thresholdbc <- ebc@t[which.max(ebc@TPR + ebc@TNR)]
       thbc<-threshold(ebc)
       bc_TSS <- max(ebc@TPR + ebc@TNR)-1
-      
+
       bc_cont <- predict(predictors, bc, progress='text')
       bc_bin <- bc_cont > thresholdbc
       bc_cut <- bc_cont * bc_bin
@@ -146,24 +156,24 @@ dismo.mod <- function(sp,
       writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
       plot(bc_cont,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
       plot(bc_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
       plot(bc_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
       dev.off()
-      
-      if (project.model==T){	
+
+      if (project.model==T){
         for (proj in projections){
           #data <- list.files(paste0("./env/",proj),pattern=proj)
           #data2 <- stack(data)
           stopifnot(names(projdata)==names(predictors))
-          bc_proj <- predict(projdata,bc,progress='text') 
-          bc_proj_bin <- bc_proj > thresholdbc                		
+          bc_proj <- predict(projdata,bc,progress='text')
+          bc_proj_bin <- bc_proj > thresholdbc
           bc_proj_cut <- bc_proj_bin * bc_proj
           # Normaliza o modelo cut
           #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
-          
+
           writeRaster(x=bc_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=bc_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=bc_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -172,11 +182,11 @@ dismo.mod <- function(sp,
           plot(bc_proj,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
           plot(bc_proj_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
           plot(bc_proj_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-          dev.off()   
-        }  
+          dev.off()
+        }
       }
     }
-    
+
     if (Domain==T){
         cat(paste("Domain",'\n'))
         do <- domain (predictors, pres_train)
@@ -196,48 +206,48 @@ dismo.mod <- function(sp,
         writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
-        
+
         png(filename=paste0("./",output.folder,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
         plot(do_cont,main=paste("Domain raw","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
         plot(do_bin,main=paste("Domain P/A","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
         plot(do_cut,main=paste("Domain cut","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
         dev.off()
-        
-        
+
+
         if (project.model==T){
           for (proj in projections){
             data <- list.files(paste0("./env/",proj),pattern=proj)
             data2 <- stack(data)
-            do_proj <- predict(data2,do,progress='text') 
-            do_proj_bin <- do_proj > thresholddo                    	
+            do_proj <- predict(data2,do,progress='text')
+            do_proj_bin <- do_proj > thresholddo
             do_proj_cut <- do_proj_bin * do_proj
             # Normaliza o modelo cut
             #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
-            
+
             writeRaster(x=do_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
             writeRaster(x=do_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
             writeRaster(x=do_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
-          }  
+          }
         }
-      }  
-    
-    if (maxent==T){ 
+      }
+
+    if (maxent==T){
       cat(paste("maxent",'\n'))
       mx <- maxent (predictors, pres_train)
       png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
       plot(mx)
       dev.off()
-      
+
       png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
       response(mx)
       dev.off()
-      
+
       emx <- evaluate(pres_test,backg_test,mx,predictors)
       thresholdmx <- emx@t[which.max(emx@TPR + emx@TNR)]
       thmx<-threshold(emx)
       mx_TSS <- max(emx@TPR + emx@TNR)-1
-      mx_cont <- predict(mx, predictors,progress='text') 
+      mx_cont <- predict(mx, predictors,progress='text')
       mx_bin <- mx_cont > thresholdmx
       mx_cut <- mx_cont * mx_bin
       thmx$AUC<-emx@auc
@@ -249,46 +259,46 @@ dismo.mod <- function(sp,
       writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
       plot(mx_cont,main=paste("Maxent raw","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
       plot(mx_bin,main=paste("Maxent P/A","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
       plot(mx_cut,main=paste("Maxent cut","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
       dev.off()
-      
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          mx_proj <- predict(data2,mx,progress='text') 
-          mx_proj_bin <- mx_proj > thresholdmx                    	
+          mx_proj <- predict(data2,mx,progress='text')
+          mx_proj_bin <- mx_proj > thresholdmx
           mx_proj_cut <- mx_proj_bin * mx_proj
           # Normaliza o modelo cut
           #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
-          
+
           writeRaster(x=mx_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=mx_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=mx_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
+        }
+      }
     }
-    
-    if (Mahal==T){ 
+
+    if (Mahal==T){
       cat(paste("Mahalanobis distance",'\n'))
       ma <- mahal (predictors, pres_train)
       ema <- evaluate(pres_test,backg_test,ma,predictors)
       thresholdma <- ema@t[which.max(ema@TPR + ema@TNR)]
       thma<-threshold(ema)
       ma_TSS <- max(ema@TPR + ema@TNR)-1
-      ma_cont <- predict(ma, predictors,progress='text') 
+      ma_cont <- predict(ma, predictors,progress='text')
       ma_cont[ma_cont < threshold(ema,'no_omission')]<-threshold(ema,'no_omission')
       ma_bin <- ma_cont > thresholdma
       ma_cut <- ma_cont
       ma_cut[ma_cut < thresholdma]<-thresholdma
       if(minValue(ma_cut)<0) {
         ma_cut<-(ma_cut-minValue(ma_cut))/maxValue(ma_cut-minValue(ma_cut))}
-      
+
       thma$AUC<-ema@auc
       thma$TSS<-ma_TSS
       thma$algoritmo<-"Mahal"
@@ -298,32 +308,32 @@ dismo.mod <- function(sp,
       writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
       plot(ma_cont,main=paste("Mahal raw","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
       plot(ma_bin,main=paste("Mahal P/A","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
       plot(ma_cut,main=paste("Mahal cut","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
       dev.off()
-      
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          ma_proj <- predict(data2,ma,progress='text') 
-          ma_proj_bin <- ma_proj > thresholdma                    	
+          ma_proj <- predict(data2,ma,progress='text')
+          ma_proj_bin <- ma_proj > thresholdma
           ma_proj_cut <- ma_proj_bin * ma_proj
           # Normaliza o modelo cut
           #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
-          
+
           writeRaster(x=ma_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=ma_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=ma_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
-      
+        }
+      }
+
     }
-    
+
     if (GLM==T){##
       cat(paste("GLM",'\n'))
       null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
@@ -340,51 +350,51 @@ dismo.mod <- function(sp,
       thglm$partition<-i
       row.names(thglm)<-paste(sp,i,"glm")
       eval<-rbind(eval,thglm)
-      
+
       glm_cont <- predict(predictors,glm,progress='text',type="response")
       glm_bin <- glm_cont>thresholdglm
-      glm_cut <- glm_bin*glm_cont 
+      glm_cut <- glm_bin*glm_cont
       # Normaliza o modelo cut
       #glm_cut <- glm_cut/maxValue(glm_cut)
       writeRaster(x=glm_cont,filename=paste0("./",output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=glm_bin,filename=paste0("./",output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=glm_cut,filename=paste0("./",output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/glm",sp,"_",i,"%03d.png"))
       plot(glm_cont,main=paste("GLM raw","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
       plot(glm_bin,main=paste("GLM P/A","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
       plot(glm_cut,main=paste("GLM cut","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
       dev.off()
-      
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          glm_proj <- predict(data2,glm,progress='text') 
-          glm_proj_bin <- glm_proj > thresholdglm                    	
+          glm_proj <- predict(data2,glm,progress='text')
+          glm_proj_bin <- glm_proj > thresholdglm
           glm_proj_cut <- glm_proj_bin * glm_proj
           # Normaliza o modelo cut
           #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
-          
+
           writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=glm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
-      
+        }
+      }
+
     }
-    
+
     if (RF==T){
       library(randomForest)
       cat(paste("Random Forests",'\n'))
       #rf1 <- tuneRF(x=envtrain,y=sdmdata_train$pa,stepFactor = 0.5)
-      rf <- randomForest (sdmdata_train$pa~.,data=envtrain) 
+      rf <- randomForest (sdmdata_train$pa~.,data=envtrain)
       #rf <- randomForest (x =envtrain ,y=factor(sdmdata_train$pa),xtest=envtest,ytest = factor(sdmdata_teste$pa))#fazendo teste interno a funcao evaluate nao serve :(
-      
+
       erf <- evaluate(envtest_pre,envtest_back,rf)
       rf_TSS <- max(erf@TPR + erf@TNR)-1
-      
+
       thresholdrf <- erf@t[which.max(erf@TPR + erf@TNR)]
       thrf <- threshold(erf)
       thrf$AUC<-erf@auc
@@ -393,40 +403,40 @@ dismo.mod <- function(sp,
       thrf$partition<-i
       row.names(thrf)<-paste(sp,i,"rf")
       eval<-rbind(eval,thrf)
-      
+
       rf_cont <- predict(predictors,rf,progress='text',type="response")
       rf_bin <- rf_cont>thresholdrf
-      rf_cut <- rf_bin*rf_cont 
+      rf_cut <- rf_bin*rf_cont
       #rf1_cut <- rf1_cut/maxValue(rf1_cut)
       writeRaster(x=rf_cont,filename=paste0("./",output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=rf_bin,filename=paste0("./",output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=rf_cut,filename=paste0("./",output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/rf",sp,"_",i,"%03d.png"))
       plot(rf_cont,main=paste("RF raw","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
       plot(rf_bin,main=paste("RF P/A","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
       plot(rf_cut,main=paste("RF cut","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
       dev.off()
-      
-      
+
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          rf_proj <- predict(data2,rf,progress='text') 
-          rf_proj_bin <- rf_proj > thresholdrf                    	
+          rf_proj <- predict(data2,rf,progress='text')
+          rf_proj_bin <- rf_proj > thresholdrf
           rf_proj_cut <- rf_proj_bin * rf_proj
           # Normaliza o modelo cut
           #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
-          
+
           writeRaster(x=rf_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=rf_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=rf_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
-    } 
-    
+        }
+      }
+    }
+
     if (SVM==T){
       cat(paste("SVM",'\n'))
       library(kernlab)
@@ -445,42 +455,42 @@ dismo.mod <- function(sp,
       svm_cont <- predict(predictors,svm,progress='text')
       svm_bin <- svm_cont>thresholdsvm
       svm_cut <- svm_bin*svm_cont
-      
+
       #TRANSFORMA 0 A 1
-      svm_cont <- svm_cont/maxValue(svm_cont) 
+      svm_cont <- svm_cont/maxValue(svm_cont)
       svm_cut <- svm_cut/maxValue(svm_cut)
-      
-      
+
+
       writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm_bin,filename=paste0("./",output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm_cut,filename=paste0("./",output.folder,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/svm",sp,"_",i,"%03d.png"))
       plot(svm_cont,main=paste("SVM raw","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
       plot(svm_bin,main=paste("SVM P/A","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
       plot(svm_cut,main=paste("SVM cut","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
       dev.off()
-      
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          svm_proj <- predict(data2,svm,progress='text') 
-          svm_proj_bin <- svm_proj > thresholdsvm                    	
+          svm_proj <- predict(data2,svm,progress='text')
+          svm_proj_bin <- svm_proj > thresholdsvm
           svm_proj_cut <- svm_proj_bin * svm_proj
-          
+
           # Normaliza o modelo cut
           #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
-          
+
           writeRaster(x=svm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
-      
+        }
+      }
+
     }
-    
+
     if (SVM2==T){
       cat(paste("SVM2",'\n'))
       library(e1071)
@@ -499,47 +509,47 @@ dismo.mod <- function(sp,
       svm2_cont <- predict(predictors,svm2,progress='text')
       svm2_bin <- svm2_cont>thresholdsvm2
       svm2_cut <- svm2_bin*svm2_cont
-      
+
       #TRANSFORMA 0 A 1
-      svm2_cont <- svm2_cont/maxValue(svm2_cont) 
+      svm2_cont <- svm2_cont/maxValue(svm2_cont)
       svm2_cut <- svm2_cut/maxValue(svm2_cut)
-      
+
       writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
-      
+
       png(filename=paste0("./",output.folder,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
       plot(svm2_cont,main=paste("SVM2 raw","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
       plot(svm2_bin,main=paste("SVM2 P/A","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
       plot(svm2_cut,main=paste("SVM2 cut","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
       dev.off()
-      
+
       if (project.model==T){
         for (proj in projections){
           data <- list.files(paste0("./env/",proj),pattern=proj)
           data2 <- stack(data)
-          svm2_proj <- predict(data2,svm2,progress='text') 
-          svm2_proj_bin <- svm2_proj > thresholdsvm2                    	
+          svm2_proj <- predict(data2,svm2,progress='text')
+          svm2_proj_bin <- svm2_proj > thresholdsvm2
           svm2_proj_cut <- svm2_proj_bin * svm2_proj
           # Normaliza o modelo cut
           #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
-          
+
           writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm2_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
           rm(data2)
-        }  
-      }       
-      
+        }
+      }
+
     }
-    
+
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
     write.table(eval[-1,],file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
     }
-    
+
    #cat(paste("Saving the evaluation file...",sp,i,'\n'))
-   #write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))    
+   #write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
     cat("DONE",'\n')
     print(date())
   }
-  
+

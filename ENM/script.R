@@ -8,13 +8,13 @@ library("snowfall")
 library("rJava")
 
 ####eigenvariables
-source("./fct/eigenvariables.fct.R")
-library(raster)
-var<-stack(list.files(path='../1km/', pattern='.asc$', full.names = TRUE))
-eigenvariables.fct(var, '1Km_', .95)
+#source("./fct/eigenvariables.fct.R")
+#library(raster)
+#var<-stack(list.files(path='../1km/', pattern='.asc$', full.names = TRUE))
+#eigenvariables.fct(var, '1Km_', .95)
 #####
 
-predictors <-  stack(list.files("./env",full.names = T)[1])
+predictors <-  stack(list.files("./env",pattern="1K",full.names = T)[1])
 ####Ler os dados de ocorrencia - tabela por registro----
 registros<-read.csv("./data/Atlantic_Domain_Ari_RevTaxon_Final.csv",sep=";")
 
@@ -39,6 +39,7 @@ dim(spp.env.filt)
 # agora o passo é tirar as linhas que tem espécie igual E ambiente igual
 a <- spp.env.filt[,c("sp","cells")]
 spp.filt <- spp.env.filt[!duplicated(a),]
+
 head(spp.filt)
 dim(spp.filt)
 
@@ -46,9 +47,15 @@ names.sp <- unique(spp.filt$sp)
 length(names.sp)
 names.sp <- names.sp[table(spp.filt$sp)>10] #considerando apenas spp com mais de 10 registros. AGORA É 10 REGISTROS UNICOS, SEM DUPLICADOS ENTRE PIXEIS
 length(names.sp)###O NUMERO DE ESPECIES CON N>10 MUDOU, CAIU PARA 2115 ANTES ERA 2200 E POUCO
+
 occs <- spp.filt[,c("sp","lon","lat")]
 dim(occs)
-
+rm(spp.filt)
+rm(a)
+rm(registros)
+rm(registros2)
+rm(spp.env)
+rm(spp.env.filt)
 #### ATE AQUI, O RESTO FICOU IGUAL
 
 
@@ -74,13 +81,15 @@ dim(occs)
 # 	sfClusterApplyLB(names.sp, ensemble, input.folder1 = "models", input.folder2 = "presfinal")
 #
 # sfStop()
+
 args(dismo.mod)
-N <- sample(1:2117,100)
-lapply(names.sp[N],
+set.seed(712)
+N <- sample(1:2117,30)
+lapply(names.sp[N[21:30]],
        dismo.mod,
-       occs = spp.filt,
+       occs = occs,
        predictors = predictors,
-       buffer = T,
+       buffer = F,
        buffer.type ="max",
        maxent = F,
        Bioclim = T,
@@ -89,12 +98,29 @@ lapply(names.sp[N],
        GLM = T,
        RF = T,
        SVM = T,
-       SVM2 = T,
+       SVM2 = F,
        part = 3,
        seed = 712,
-       output.folder = "buffermax")
-lapply(names.sp[1:10],final.model,select.partitions=T,weight.partitions = T)
-lapply(names.sp[1:10],ensemble)
+       output.folder = "nobuffer")
+
+args(final.model)
+names.sp[N]
+lapply(names.sp[N[1]],
+       final.model,
+       select.partitions=T,
+       weight.partitions = T,
+       weight.par="TSS",
+       input.folder="nobuffer",
+       output.folder="presfinal")
+args(ensemble)
+lapply(names.sp[N[1]],
+       ensemble,
+       input.folder1="nobuffer",
+       input.folder2="presfinal",
+       occs=occs,
+       which.models=c("Final.bin.mean3", "Final.mean.bin7"),
+       output.folder="ensemble")
+
 args(ensemble)
 
 plot(mean(bin.sel))

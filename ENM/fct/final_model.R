@@ -69,7 +69,7 @@ final.model <- function(sp,
             sel.index <- which(stats2[,"TSS"] >= TSS.value)
             cont.sel <- mod.cont[[sel.index]]#(1)
             bin.sel <- mod.bin[[sel.index]]#(5)
-            cut.sel <- mod.cut[[sel.index]]#(6)
+            #cut.sel <- mod.cut[[sel.index]]#(6)
 
             th.mean <- mean(stats2[,names(stats2) == threshold][sel.index])
 
@@ -85,16 +85,20 @@ final.model <- function(sp,
                 #bin.sel#(5)(3)(7) (8)
                 #cut.sel#(4)(6)(9)(10)
 
-                final <- stack(cont.sel,#[2]
+                final <- stack(#cont.sel,#[2]
                                bin.sel,#[3],
-                               cut.sel,#[4] --
-                               bin.sel,#[7]
-                               bin.sel,#[8] --
-                               cut.sel,#[9]
-                               cut.sel)#[10] --
+                               #cut.sel,#[4] --
+                               bin.sel
+                               #,#[7]
+                               #bin.sel,#[8] --
+                               #cut.sel,#[9]
+                               #cut.sel
+                               )#[10] --
                 names(final) <-
                     c(
-                        "Final.cont.mean2","Final.bin.mean3","Final.cut.mean4","Final.mean.bin7","Final.inter.bin8","Mean.cut.sel9","inter.cut.sel10"
+                        #"Final.cont.mean2",
+                        "Final.bin.mean3",#"Final.cut.mean4",
+                        "Final.mean.bin7"#,"Final.inter.bin8","Mean.cut.sel9","inter.cut.sel10"
                     )
             }
 
@@ -108,27 +112,32 @@ final.model <- function(sp,
                 final.cont.mean <- mean(cont.sel)#(2)
                 final.bin.mean <- (final.cont.mean > th.mean)#(3)
                 final.sel.bin <- mean(bin.sel)#(7)
-                mean.cut.sel <- mean(cut.sel)#(9)
+                #mean.cut.sel <- mean(cut.sel)#(9)
 
                 if (intersection == TRUE) {
                     final.cut.mean <- final.bin.mean * final.cont.mean #(4)
                     final.inter <- prod(bin.sel)#(8)
-                    inter.cut.sel <- prod(cut.sel)#(10)
+                    #inter.cut.sel <- prod(cut.sel)#(10)
                     final <-
                         stack(
-                            final.cont.mean,final.bin.mean,final.cut.mean,final.sel.bin,final.inter,mean.cut.sel,inter.cut.sel
+                            final.cont.mean,final.bin.mean,final.cut.mean,final.sel.bin,final.inter#,mean.cut.sel,
+                            #inter.cut.sel
                         )
                     names(final) <-
                         c(
-                            "Final.cont.mean2","Final.bin.mean3","Final.cut.mean4","Final.mean.bin7","Final.inter.bin8","Mean.cut.sel9","inter.cut.sel10"
+                            "Final.cont.mean2","Final.bin.mean3","Final.cut.mean4","Final.mean.bin7","Final.inter.bin8"#,"Mean.cut.sel9","inter.cut.sel10"
                         )
                 }
                 if (intersection == FALSE) {
                     final <-
-                        stack(final.cont.mean,final.bin.mean,final.sel.bin,mean.cut.sel)
+                        stack(#final.cont.mean,
+                            final.bin.mean,final.sel.bin
+                            #,mean.cut.sel
+                            )
                     names(final) <-
                         c(
-                            "Final.cont.mean2","Final.bin.mean3","Final.mean.bin7","Mean.cut.sel9"
+                            #"Final.cont.mean2",
+                            "Final.bin.mean3","Final.mean.bin7"#,"Mean.cut.sel9"
                         )
                 }
 

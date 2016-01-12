@@ -2,12 +2,10 @@
 
 final.model <- function(sp,
                         select.partitions = T,
-                        intersection = F,
-                        weight.partitions = F,
+
                         threshold = c("spec_sens"),
                         TSS.value = 0.2,
-                        #para weight partitions
-                        weight.par = c("TSS","AUC"),
+
                         input.folder = "models",
                         output.folder = "presfinal") {
     if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)
@@ -36,10 +34,7 @@ final.model <- function(sp,
     for (algo in algoritmos) {
         cat(paste("Extracting data for",algo,"\n"))
         stats2 <- stats[stats$algoritmo == algo,]
-        if (algo == "Mahal") {
-            stats2$spec_sens[stats2$spec_sens < 0] <- 0
 
-        }
 
         part <- nrow(stats2)#How many partitions were there
 
@@ -48,20 +43,17 @@ final.model <- function(sp,
             list.files(
                 path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cont_",sp)
             )
-        modelos.cut <-
-            list.files(
-                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cut_",sp)
-            )
+
         modelos.bin <-
             list.files(
                 path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_bin_",sp)
             )
         mod.cont <- stack(modelos.cont)#(0)
-        mod.cut <- stack(modelos.cut)#(0)
+
         mod.bin <- stack(modelos.bin)#(0)
 
         names(mod.cont) <- paste0(sp,algo,"Partition",1:part)
-        names(mod.cut) <- names(mod.cont)
+
         names(mod.bin) <- names(mod.cont)
 
         if (select.partitions == T) {
@@ -69,7 +61,7 @@ final.model <- function(sp,
             sel.index <- which(stats2[,"TSS"] >= TSS.value)
             cont.sel <- mod.cont[[sel.index]]#(1)
             bin.sel <- mod.bin[[sel.index]]#(5)
-            #cut.sel <- mod.cut[[sel.index]]#(6)
+
 
             th.mean <- mean(stats2[,names(stats2) == threshold][sel.index])
 
@@ -81,24 +73,14 @@ final.model <- function(sp,
                 cat(paste(
                     length(sel.index), "partitions was selected for",sp,algo,"\n"
                 ))
-                #cont.sel#(1)(2)
-                #bin.sel#(5)(3)(7) (8)
-                #cut.sel#(4)(6)(9)(10)
 
-                final <- stack(#cont.sel,#[2]
-                               bin.sel,#[3],
-                               #cut.sel,#[4] --
-                               bin.sel
-                               #,#[7]
-                               #bin.sel,#[8] --
-                               #cut.sel,#[9]
-                               #cut.sel
-                               )#[10] --
+                final <- stack(bin.sel,#[3],
+                               bin.sel#[7]
+                               )
                 names(final) <-
                     c(
-                        #"Final.cont.mean2",
-                        "Final.bin.mean3",#"Final.cut.mean4",
-                        "Final.mean.bin7"#,"Final.inter.bin8","Mean.cut.sel9","inter.cut.sel10"
+                        "Final.bin.mean3",
+                        "Final.mean.bin7"
                     )
             }
 
@@ -112,32 +94,16 @@ final.model <- function(sp,
                 final.cont.mean <- mean(cont.sel)#(2)
                 final.bin.mean <- (final.cont.mean > th.mean)#(3)
                 final.sel.bin <- mean(bin.sel)#(7)
-                #mean.cut.sel <- mean(cut.sel)#(9)
 
-                if (intersection == TRUE) {
-                    final.cut.mean <- final.bin.mean * final.cont.mean #(4)
-                    final.inter <- prod(bin.sel)#(8)
-                    #inter.cut.sel <- prod(cut.sel)#(10)
+
                     final <-
-                        stack(
-                            final.cont.mean,final.bin.mean,final.cut.mean,final.sel.bin,final.inter#,mean.cut.sel,
-                            #inter.cut.sel
-                        )
-                    names(final) <-
-                        c(
-                            "Final.cont.mean2","Final.bin.mean3","Final.cut.mean4","Final.mean.bin7","Final.inter.bin8"#,"Mean.cut.sel9","inter.cut.sel10"
-                        )
-                }
-                if (intersection == FALSE) {
-                    final <-
-                        stack(#final.cont.mean,
-                            final.bin.mean,final.sel.bin
-                            #,mean.cut.sel
+                        stack(final.bin.mean,
+                              final.sel.bin
                             )
                     names(final) <-
                         c(
-                            #"Final.cont.mean2",
-                            "Final.bin.mean3","Final.mean.bin7"#,"Mean.cut.sel9"
+                            "Final.bin.mean3",
+                            "Final.mean.bin7"
                         )
                 }
 
@@ -163,51 +129,15 @@ final.model <- function(sp,
                     todo <- addLayer(todo,final)
                 }
                 cat("select",sp,algo,"DONE","\n")
-                print(date())
+
             }
         }
-        if (weight.partitions == TRUE) {
-            cat("weighing partitions for", sp, algo,"\n")
 
-            for (par in unique(weight.par)) {
-                cat("weighing by", weight.par,"\n")
-
-                pond.stats <- stats2[,par]
-                if (par == "TSS")
-                    pond.stats <- (pond.stats + 1) / 2
-                pond <- mod.cont[[1:part]] * pond.stats
-                final.pond <- mean(pond)
-                names(final.pond) <- paste0(par,"-Weighted")
-                #plot(final.pond,main=paste0(par,"-weighted ",sp," ",algo))
-                png(
-                    filename = paste0(
-                        "./",input.folder,"/",sp,"/",output.folder,"/Final",par,"weighted",sp,algo,".png"
-                    )
-                )
-                par(mar = c(4,4,3,3),mfrow = c(1,1))
-                plot(final.pond,main = paste0(par,"-weighted ",sp," ",algo))
-                dev.off()
-                ##
-                writeRaster(
-                    final.pond,filename = paste0(
-                        "./",input.folder,"/",sp,"/",output.folder,"/Final",par,"weighted",sp,algo
-                    ),overwrite = T,bylayer = T,format = "GTiff"
-                )
-
-                if (exists("final.w")) {
-                    final.w <-  addLayer(final.w,final.pond)
-
-                } else {
-                    final.w <- final.pond
-                    todo <- addLayer(todo,final.w)
-                }
-            }
-        }
         print(paste("DONE",algo,"\n"))
         print(date())
-    }
-    #todo <- addLayer(final,final.w)
+
+
     return(todo)
     print(date())
-
 }
+

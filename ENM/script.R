@@ -104,16 +104,14 @@ lapply(names.sp[N[21:30]],
        output.folder = "nobuffer")
 
 args(final.model)
-names.sp[N]
-lapply(names.sp[N[1]],
+sort(names.sp[N])
+
+lapply(sort(names.sp[N]),
        final.model,
-       select.partitions=T,
-       weight.partitions = T,
-       weight.par="TSS",
        input.folder="nobuffer",
        output.folder="presfinal")
 args(ensemble)
-lapply(names.sp[N[1]],
+lapply(sort(names.sp[N])[2:12],
        ensemble,
        input.folder1="nobuffer",
        input.folder2="presfinal",
@@ -121,10 +119,4 @@ lapply(names.sp[N[1]],
        which.models=c("Final.bin.mean3", "Final.mean.bin7"),
        output.folder="ensemble")
 
-args(ensemble)
 
-plot(mean(bin.sel))
-
-lapply(names.sp[1:10],dismo.mod,maxent=T,Bioclim=T,Domain=T,Mahal=T,GLM=T,RF=T,SVM=T,
-       SVM2=T, part=3, seed=2311,predictors=predictors)
-q()

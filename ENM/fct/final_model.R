@@ -1,153 +1,143 @@
 ######### Final modeling: one model per algorithm ----
 
 final.model <- function(sp,
-                        select.partitions=T,
-                        weight.partitions=F,
-                        threshold=c("spec_sens"),
-                        TSS.value=0.2,
-                        #para weight partitions
-                        weight.par=c("TSS","AUC"),
-                        input.folder="models",
-                        output.folder="presfinal"){
+                        select.partitions = T,
 
-  if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder))==FALSE) dir.create(paste0("./",input.folder,"/",sp,"/",output.folder), recursive = TRUE)
+                        threshold = c("spec_sens"),
+                        TSS.value = 0.2,
+
+                        input.folder = "models",
+                        output.folder = "presfinal") {
+    if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)
+        dir.create(paste0("./",input.folder,"/",sp,"/",output.folder), recursive = TRUE)
     print(date())
 
-  cat(paste(sp,"\n"))
-  library("raster")
-  library("data.table")
-  cat(paste("Reading the evaluation files","\n"))
-  evall<- list.files(path = paste0(input.folder,"/",sp), pattern=paste0("evaluate",sp),full.names = T)
-  lista<-list()
-  for (i in 1:length(evall)) {
-    lista[[i]]<-read.table(file = evall[i],header=T,row.names=1)
-  }
-  stats<-rbindlist(lista)
-  stats<-as.data.frame(stats)
+    cat(paste(sp,"\n"))
+    library("raster")
+    library("data.table")
+    cat(paste("Reading the evaluation files","\n"))
+    evall <-
+        list.files(
+            path = paste0(input.folder,"/",sp), pattern = paste0("evaluate",sp),full.names = T
+        )
+    lista <- list()
+    for (i in 1:length(evall)) {
+        lista[[i]] <- read.table(file = evall[i],header = T,row.names = 1)
+    }
+    stats <- rbindlist(lista)
+    stats <- as.data.frame(stats)
 
-  #Extracts only for the selected algorithm
-  algoritmos <- unique(stats$algoritmo)
-  #algo <- algoritmos[1]
-  todo <- stack()
-  for (algo in algoritmos){
-    cat(paste("Extracting data for",algo,"\n"))
-      stats2 <- stats[stats$algoritmo==algo,]
-    if(algo=="Mahal"){
-       stats2$spec_sens[stats2$spec_sens<0]<-0
+    #Extracts only for the selected algorithm
+    algoritmos <- unique(stats$algoritmo)
+    #algo <- algoritmos[1]
+    todo <- stack()
+    for (algo in algoritmos) {
+        cat(paste("Extracting data for",algo,"\n"))
+        stats2 <- stats[stats$algoritmo == algo,]
 
-       }
 
-    part <- nrow(stats2)#How many partitions were there
+        part <- nrow(stats2)#How many partitions were there
 
-    cat(paste("Reading models from .tif files","\n"))
-    modelos.cont <- list.files(path = paste0(input.folder,"/",sp),full.names=T,pattern=paste0(algo,"_cont_",sp))
-    modelos.cut <- list.files(path = paste0(input.folder,"/",sp),full.names=T,pattern=paste0(algo,"_cut_",sp))
-    modelos.bin <- list.files(path = paste0(input.folder,"/",sp),full.names=T,pattern=paste0(algo,"_bin_",sp))
-    mod.cont<-stack(modelos.cont)#(0)
-    mod.cut <- stack(modelos.cut)
-    mod.bin <- stack(modelos.bin)
+        cat(paste("Reading models from .tif files","\n"))
+        modelos.cont <-
+            list.files(
+                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cont_",sp)
+            )
 
-    names(mod.cont) <- paste0(sp,algo,"Partition",1:part)
-    names(mod.cut) <- names(mod.cont)
-    names(mod.bin) <- names(mod.cont)
+        modelos.bin <-
+            list.files(
+                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_bin_",sp)
+            )
+        mod.cont <- stack(modelos.cont)#(0)
 
-    if (select.partitions==T){
-      cat("selecting partitions for", sp, algo,"\n")
-      sel.index<- which(stats2[,"TSS"]>=TSS.value)
-      cont.sel<- mod.cont[[sel.index]]
-      bin.sel<- mod.bin[[sel.index]]#
-      cut.sel<- mod.cut[[sel.index]]#
+        mod.bin <- stack(modelos.bin)#(0)
 
-      th.mean <- mean(stats2[,names(stats2)==threshold][sel.index])
+        names(mod.cont) <- paste0(sp,algo,"Partition",1:part)
 
-      if (length(sel.index)==0) cat(paste("No partition was selected for",sp,algo,"\n"))
+        names(mod.bin) <- names(mod.cont)
 
-      #en caso de que sea solo uno varios modelos son el mismo
-      if (length(sel.index)==1){
-        cat(paste(length(sel.index), "partitions was selected for",sp,algo,"\n"))
-        #cont.sel#(1)(2)
-        #bin.sel#(5)(3)(7) (8)
-        #cut.sel#(4)(6)(9)(10)
+        if (select.partitions == T) {
+            cat("selecting partitions for", sp, algo,"\n")
+            sel.index <- which(stats2[,"TSS"] >= TSS.value)
+            cont.sel <- mod.cont[[sel.index]]#(1)
+            bin.sel <- mod.bin[[sel.index]]#(5)
 
-        final <- stack(cont.sel,#[2]
-                       bin.sel,#[3],
-                       cut.sel,#[4]
-                       bin.sel,#[7]
-                       bin.sel,#[8]
-                       cut.sel,#[9]
-                       cut.sel)#[10]
 
-      }
+            th.mean <- mean(stats2[,names(stats2) == threshold][sel.index])
 
-      #en caso de que sean más aplica el mapa
+            if (length(sel.index) == 0)
+                cat(paste("No partition was selected for",sp,algo,"\n"))
 
-      if (length(sel.index)>1){
-        cat(paste(length(sel.index), "partitions were selected for",sp,"\n"))
+            #en caso de que sea solo uno varios modelos son el mismo
+            if (length(sel.index) == 1) {
+                cat(paste(
+                    length(sel.index), "partitions was selected for",sp,algo,"\n"
+                ))
 
-        final.cont.mean <- mean(cont.sel)#(2)
-        final.bin.mean <- (final.cont.mean>th.mean)#(3)
-        final.cut.mean <- final.bin.mean*final.cont.mean #(4)
+                final <- stack(bin.sel,#[3],
+                               bin.sel#[7]
+                               )
+                names(final) <-
+                    c(
+                        "Final.bin.mean3",
+                        "Final.mean.bin7"
+                    )
+            }
 
-        final.sel.bin <- mean(bin.sel)#(7)
-        final.inter<-prod(bin.sel)#(8)
+            #en caso de que sean más aplica el mapa
 
-        mean.cut.sel <- mean(cut.sel)#(9)
-        inter.cut.sel <- prod(cut.sel)#(10)
+            if (length(sel.index) > 1) {
+                cat(paste(
+                    length(sel.index), "partitions were selected for",sp,"\n"
+                ))
 
-        final <- stack(final.cont.mean,final.bin.mean,final.cut.mean,final.sel.bin,final.inter,mean.cut.sel,inter.cut.sel)
-      }
-        names(final) <- c("Final.cont.mean2","Final.bin.mean3","Final.cut.mean4","Final.mean.bin7","Final.inter.bin8","Mean.cut.sel9","inter.cut.sel10")
+                final.cont.mean <- mean(cont.sel)#(2)
+                final.bin.mean <- (final.cont.mean > th.mean)#(3)
+                final.sel.bin <- mean(bin.sel)#(7)
 
-        if(exists("final")) {
-        plot(final)
 
-            #Escribe final
-        writeRaster(x=final,filename=paste0("./",input.folder,"/",sp,"/",output.folder,"/",names(final),sp,algo),bylayer=T,overwrite=T,format="GTiff")
+                    final <-
+                        stack(final.bin.mean,
+                              final.sel.bin
+                            )
+                    names(final) <-
+                        c(
+                            "Final.bin.mean3",
+                            "Final.mean.bin7"
+                        )
+                }
 
-         for (i in 1:dim(final)[[3]]){
-          png(filename=paste0(input.folder,"/",sp,"/",output.folder,"/",names(final)[i],sp,algo,".png"))
-          plot(final[[i]],main=names(final)[i])
-          dev.off()
+
+                if (exists("final")) {
+                    plot(final)
+                    #Escribe final
+                    writeRaster(
+                        x = final,filename = paste0(
+                            "./",input.folder,"/",sp,"/",output.folder,"/",names(final),sp,algo
+                        ),bylayer = T,overwrite = T,format = "GTiff"
+                    )
+
+                    for (i in 1:dim(final)[[3]]) {
+                        png(
+                            filename = paste0(
+                                input.folder,"/",sp,"/",output.folder,"/",names(final)[i],sp,algo,".png"
+                            )
+                        )
+                        plot(final[[i]],main = names(final)[i])
+                        dev.off()
+                    }
+                    todo <- addLayer(todo,final)
+                }
+                cat("select",sp,algo,"DONE","\n")
+
+            }
         }
-todo <- addLayer(todo,final)
-        }
-        cat("select",sp,algo,"DONE","\n")
+
+        print(paste("DONE",algo,"\n"))
         print(date())
-    }
 
-    if (weight.partitions==TRUE){
-        cat("weighing partitions for", sp, algo,"\n")
 
-        for (par in unique(weight.par)){
-            cat("weighing by", weight.par,"\n")
-
-            pond.stats<-stats2[,par]
-        if (par=="TSS") pond.stats<-(pond.stats+1)/2
-        pond <- mod.cont[[1:part]]*pond.stats
-        final.pond <- mean(pond)
-        names(final.pond)<-paste0(par,"-Weighted")
-		#plot(final.pond,main=paste0(par,"-weighted ",sp," ",algo))
-        png(filename=paste0("./",input.folder,"/",sp,"/",output.folder,"/Final",par,"weighted",sp,algo,".png"))
-        par(mar=c(4,4,3,3),mfrow=c(1,1))
-        plot(final.pond,main=paste0(par,"-weighted ",sp," ",algo))
-        dev.off()
-        ##
-        writeRaster(final.pond,filename=paste0("./",input.folder,"/",sp,"/",output.folder,"/Final",par,"weighted",sp,algo),overwrite=T,bylayer=T,format="GTiff")
-
-        if(exists("final.w")){
-            final.w <-  addLayer(final.w,final.pond)
-
-        } else {
-            final.w <- final.pond
-            todo <- addLayer(todo,final.w)
-      }
-    }
-}
-    print(paste("end",algo,"\n"))
-print(date())
-        }
-    #todo <- addLayer(final,final.w)
     return(todo)
     print(date())
+}
 
-  }

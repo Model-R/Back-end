@@ -1,11 +1,9 @@
 ######### Final modeling: one model per algorithm ----
 
-final.model <- function(sp,
+finalModel <- function(sp,
                         select.partitions = T,
-
                         threshold = c("spec_sens"),
-                        TSS.value = 0.2,
-
+                        TSS.value = 0.6,
                         input.folder = "models",
                         output.folder = "presfinal") {
     if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)

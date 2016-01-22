@@ -28,13 +28,13 @@ dismo.mod <- function(sp,
     }
   }
 
-  library(dismo)
-  library(XML)
-  library(raster)
-  library(rgdal)
+  #Teste se pacotes estao instalados. Caso negativo, instala os pacotes e dependencias
+  pacotes <-c('dismo','XML','raster','rgdal','maps','rgeos')
+  if (!pacotes %in% installed.packages()) install.packages(pacotes, dependencies = TRUE)
+  #Laoding packages
+  lapply(pacotes, require, character.only = TRUE)
   
-  library(maps)
-  library(rgeos)
+  # Starting script
   print(date())
 
   cat(paste("Modeling",sp,"...",'\n'))

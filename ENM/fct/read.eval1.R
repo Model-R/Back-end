@@ -23,11 +23,12 @@ read.eval<-function(sp,
       mean.table.buffer[a,b] <- as.matrix(lista.buffer.final[[a]][1])[b]
      }
   }
-  colnames(mean.table.buffer)<- c(as.list(paste(lista.buffer.final[[1]][,2])),'stat','tratamento')
+  
   for (c in 1:length(mean.table.buffer[1,])){
-    mean.table.buffer[nrow(mean.table.buffer)-2,c]<- mean(as.numeric((mean.table.buffer[,c])),na.rm=TRUE)
-    mean.table.buffer[nrow(mean.table.buffer)-1,c]<- sd(as.numeric((mean.table.buffer[,c])),na.rm=TRUE)
+    mean.table.buffer[nrow(mean.table.buffer)-1,c]<- mean(as.numeric((mean.table.buffer[,c])),na.rm=TRUE)
+    mean.table.buffer[nrow(mean.table.buffer),c]<- sd(as.numeric((mean.table.buffer[,c])),na.rm=TRUE)
   }
+  colnames(mean.table.buffer)<- c(as.list(paste(lista.buffer.final[[1]][,2])),'stat','tratamento')
   mean.table.buffer[,ncol(mean.table.buffer)-1]<-c(paste0('Com buffer ',1:(nrow(mean.table.buffer)-2)),'mean','sd')
   mean.table.buffer[,ncol(mean.table.buffer)]<-rep('Com buffer')
   
@@ -47,23 +48,46 @@ read.eval<-function(sp,
   }
   colnames(mean.table)<-c(as.list(paste(lista.final[[1]][,2])), 'stat','tratamento')
   for (c in 1:length(mean.table[1,])){
-    mean.table[nrow(mean.table)-2,c]<- mean(as.numeric((mean.table[,c])),na.rm=TRUE)
-    mean.table[nrow(mean.table)-1,c]<- sd(as.numeric((mean.table[,c])),na.rm=TRUE)
+    mean.table[nrow(mean.table)-1,c]<- mean(as.numeric((mean.table[,c])),na.rm=TRUE)
+    mean.table[nrow(mean.table),c]<- sd(as.numeric((mean.table[,c])),na.rm=TRUE)
   }
+  
   
   mean.table[,ncol(mean.table)-1]<-c(paste0('sem buffer ',1:(nrow(mean.table)-2)),'mean','sd')
   mean.table[,ncol(mean.table)]<-rep('sem buffer')
   
   # Finalizando ----
-  final_mean <- rbind(mean.table[nrow(mean.table)-1,], mean.table.buffer[nrow(mean.table.buffer)-1,])
+  intermed_mean <- rbind(mean.table[nrow(mean.table)-1,], mean.table.buffer[nrow(mean.table.buffer)-1,])
+  final_mean <- data.frame()
+  for (d in 1:(ncol(intermed_mean)-2)){
+    #Sem bufer----
+    final_mean[d,1]<-intermed_mean[1,d]
+    final_mean[d,2]<- colnames(intermed_mean)[d]
+    final_mean[d,3]<- intermed_mean[1,(ncol(intermed_mean))]
+    #com buffer -----
+    final_mean[(ncol(intermed_mean)-2)+d,1]<-intermed_mean[2,d]
+    final_mean[(ncol(intermed_mean)-2)+d,2]<- colnames(intermed_mean)[d]
+    final_mean[(ncol(intermed_mean)-2)+d,3]<- intermed_mean[2,(ncol(intermed_mean))]
+  }
   
-  final_sd<- rbind(mean.table[nrow(mean.table),], mean.table.buffer[nrow(mean.table.buffer),])
-  
-  final_mean<-as.data.frame(final_mean)
-  final_sd<-as.data.frame(final_sd)
+  #Finalizando SD
+  intermed_sd <- rbind(mean.table[nrow(mean.table),], mean.table.buffer[nrow(mean.table.buffer),])
+  final_sd <- data.frame()
+  for (d in 1:(ncol(intermed_sd)-2)){
+    #Sem bufer----
+    final_sd[d,1]<-intermed_sd[1,d]
+    final_sd[d,2]<- colnames(intermed_sd)[d]
+    final_sd[d,3]<- intermed_sd[1,(ncol(intermed_sd))]
+    #com buffer -----
+    final_sd[(ncol(intermed_sd)-2)+d,1]<-intermed_sd[2,d]
+    final_sd[(ncol(intermed_sd)-2)+d,2]<- colnames(intermed_sd)[d]
+    final_sd[(ncol(intermed_sd)-2)+d,3]<- intermed_mean[2,(ncol(intermed_sd))]
+  }
+  colnames(final_mean)<-c('mean','Algorithm','Tratamento')
+  colnames(final_sd)<-c('mean','Algorithm','Tratamento')
   #final_mean[,ncol(final_mean)+1]<-paste0(sp, ' ',rownames(final_mean))
   
-  final_sd[,ncol(final_sd)+1]<-sp
+  #final_sd[,ncol(final_sd)+1]<-sp
   
   if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
   

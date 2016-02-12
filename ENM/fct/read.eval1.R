@@ -3,7 +3,7 @@
 read.eval<-function(sp,
                     input.folder1="FLORA_buffermax",
                     input.folder2="FLORA_sem_buffer",
-                    output.folder="FLORA_evaluate"){
+                    output.folder="TSS_Evaluate"){
 
 library("data.table")
   
@@ -149,4 +149,21 @@ consolidate.data <- function(
           legend.text=element_text(size=rel(1.5)),
           legend.position="bottom")
   dev.off()
+}
+
+#####-----
+#Small script to save the species name and final occurrence.
+species.table <- function(
+  output.folder="TSS_Evaluate",
+  table.name="n.sp.modelado"){
+n.sp<-table(occs$sp)
+n.sp<-as.data.frame(n.sp)
+#head(n.sp)
+#dim(n.sp)
+n.sp <- subset(n.sp, Freq > 10) 
+#dim(n.sp)
+n.sp.modelado <- subset(n.sp, Var1 %in% (names.sp[N])) 
+#head(n.sp.modelado)
+#dim(n.sp.modelado)
+write.csv(n.sp.modelado, paste0(output.folder,'/',table.name,'.csv'))
 }

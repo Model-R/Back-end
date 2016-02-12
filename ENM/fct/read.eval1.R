@@ -1,10 +1,11 @@
-#Function to organize the evaluate output from SDM. and analyse the TSS results
 #####-----
+#Function to organize the evaluate output from SDM to be used with xonsolidate.data().
 read.eval<-function(sp,
-                    input.folder1="buffermax",
-                    input.folder2="sem_buffer",
-                    output.folder="Evaluate_Flora"){
-  library("data.table")
+                    input.folder1="FLORA_buffermax",
+                    input.folder2="FLORA_sem_buffer",
+                    output.folder="FLORA_evaluate"){
+
+library("data.table")
   
   evall.buffer <- list.files(path = paste0(input.folder1,"/",sp), pattern=paste0("evaluate",sp),full.names = T)
   evall <- list.files(path = paste0(input.folder2,"/",sp), pattern=paste0("evaluate",sp),full.names = T)
@@ -17,11 +18,12 @@ read.eval<-function(sp,
     lista.buffer.final[[i]]<-lista.buffer[[i]]['TSS']
     lista.buffer.final[[i]][2]<-lista.buffer[[i]]['algoritmo']
   }
+  
   mean.table.buffer<-matrix('NULL', nrow=length(lista.buffer.final)+2, ncol=dim(lista.buffer.final[[1]][1])[1]+2)
   for (a in 1:length(lista.buffer.final)){
     for (b in 1:dim(lista.buffer.final[[1]][1])[1]){
       mean.table.buffer[a,b] <- as.matrix(lista.buffer.final[[a]][1])[b]
-     }
+    }
   }
   
   for (c in 1:length(mean.table.buffer[1,])){
@@ -29,8 +31,8 @@ read.eval<-function(sp,
     mean.table.buffer[nrow(mean.table.buffer),c]<- sd(as.numeric((mean.table.buffer[,c])),na.rm=TRUE)
   }
   colnames(mean.table.buffer)<- c(as.list(paste(lista.buffer.final[[1]][,2])),'stat','tratamento')
-  mean.table.buffer[,ncol(mean.table.buffer)-1]<-c(paste0('Com buffer ',1:(nrow(mean.table.buffer)-2)),'mean','sd')
-  mean.table.buffer[,ncol(mean.table.buffer)]<-rep('Com buffer')
+  mean.table.buffer[,ncol(mean.table.buffer)-1]<-c(paste0('Com Buffer ',1:(nrow(mean.table.buffer)-2)),'mean','sd')
+  mean.table.buffer[,ncol(mean.table.buffer)]<-rep('Com Buffer')
   
   #Resultados sem buffer----
   lista<-list()
@@ -53,10 +55,11 @@ read.eval<-function(sp,
   }
   
   
-  mean.table[,ncol(mean.table)-1]<-c(paste0('sem buffer ',1:(nrow(mean.table)-2)),'mean','sd')
-  mean.table[,ncol(mean.table)]<-rep('sem buffer')
+  mean.table[,ncol(mean.table)-1]<-c(paste0('sem Buffer ',1:(nrow(mean.table)-2)),'mean','sd')
+  mean.table[,ncol(mean.table)]<-rep('sem Buffer')
   
-  # Finalizando ----
+  # Criando data.frame final ----
+  #Finalizando mean
   intermed_mean <- rbind(mean.table[nrow(mean.table)-1,], mean.table.buffer[nrow(mean.table.buffer)-1,])
   final_mean <- data.frame()
   for (d in 1:(ncol(intermed_mean)-2)){
@@ -85,13 +88,65 @@ read.eval<-function(sp,
   }
   colnames(final_mean)<-c('mean','Algorithm','Tratamento')
   colnames(final_sd)<-c('mean','Algorithm','Tratamento')
-  #final_mean[,ncol(final_mean)+1]<-paste0(sp, ' ',rownames(final_mean))
   
-  #final_sd[,ncol(final_sd)+1]<-sp
+  #removendo dados já utilizados:
+  #Buffer
+  rm(evall.buffer)
+  rm(lista.buffer)
+  rm(lista.buffer.final)
+  rm(mean.table.buffer)
+  #s/buffer
+  rm(evall)
+  rm(lista)
+  rm(lista.final)
+  rm(mean.table)
+  #demais
+  rm(intermed_mean)
+  rm(intermed_sd)
   
+#Salvando em HD
   if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
   
   write.table(final_mean,file=paste0('./',output.folder,'/',sp,'_mean_results_tss.csv'), col.names=TRUE,row.names=FALSE)
   
   write.table(final_sd,file=paste0('./',output.folder,'/',sp,'_sd_results_tss.csv'), col.names=TRUE,row.names=FALSE)
+  #Nao remover
+  rm(final_mean)
+  rm(final_sd)
+  rm(input.folder1)
+  rm(input.folder2)
+  rm(output.folder)
+}
+
+#####-----
+#Function to analyse(compare) the evaluate output from SDM, producing TSS Boxplot for each algorithm
+consolidate.data <- function(
+  input.folder1="TSS_Evaluate",
+  stat='mean',
+  name='TSS_analysis'
+){
+  
+  library("data.table")
+  evall.list <- list.files(path = input.folder1, pattern=stat,full.names = T) #listing all evaluate files previusly organized. see read.eval()
+  lista<-list()
+  for (i in 1:length(evall.list)) {
+    lista[[i]]<-read.table(file = evall.list[i],header=T)
+  }
+  stats<-rbindlist(lista) #combining list
+  stats<-as.data.frame(stats)
+  #return(stats)
+  #Saving the boxplot graph in PNG
+  library(ggplot2)
+  ggsave(paste0("./",input.folder1,"/",name,".png"))
+  ggplot(stats, aes(x=Tratamento, y=mean, fill=Tratamento)) + geom_boxplot(notch=TRUE) + facet_grid(~Algorithm) + 
+    labs(y='') +
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          axis.text.y=element_text(size=rel(1.5)),
+          strip.text = element_text(face="bold", size=rel(1.25)),
+          legend.title=element_text(face='bold',size=rel(1.5)),
+          legend.text=element_text(size=rel(1.5)),
+          legend.position="bottom")
+  dev.off()
 }

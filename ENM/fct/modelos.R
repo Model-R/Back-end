@@ -2,7 +2,7 @@ dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
                       buffer = TRUE,
-                      buffer.type = "mean",#"max"
+                      buffer.type = "max",#"mean"
                       maxent = F,
                       Bioclim = T,
                       Domain = F,
@@ -17,7 +17,7 @@ dismo.mod <- function(sp,
                       project.model = F,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
-                      #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1<-stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                      #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
                       n.back = 500){
 
   if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
@@ -28,13 +28,13 @@ dismo.mod <- function(sp,
     }
   }
 
-  library(dismo)
-  library(XML)
-  library(raster)
-  library(rgdal)
+  #Teste se pacotes estao instalados. Caso negativo, instala os pacotes e dependencias
+  pacotes <- c('dismo','XML','raster','rgdal','maps','rgeos')
+  if (!pacotes %in% installed.packages()) install.packages(pacotes, dependencies = TRUE)
+  #Loading packages
+  lapply(pacotes, require, character.only = TRUE)
   
-  library(maps)
-  library(rgeos)
+  
   print(date())
 
   cat(paste("Modeling",sp,"...",'\n'))
@@ -44,25 +44,26 @@ dismo.mod <- function(sp,
   n.back <- n*2 #descomentado
   #tabela de valores
   presvals <- raster::extract(predictors, coord)
-  set.seed(seed+2)
- if (buffer == FALSE) backgr <- randomPoints(predictors, n.back)
-  if (buffer == TRUE){
+
+ if (buffer == FALSE) {
+   set.seed(seed+2)
+ backgr <- randomPoints(predictors, n.back)
+ } else {
    #Transformando em spatial points
   coordinates(coord) = ~lon+lat
 
-
   #estimando buffer
-  #buffer<-gBuffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)))
+  #buffer <- gBuffer(coord, width=mean(spDists(x=coord, longlat = FALSE, segments = TRUE)))
   if(buffer.type == "mean") dist.buf <-  mean(spDists(x=coord, longlat = FALSE, segments = TRUE))
   if(buffer.type == "max") dist.buf <-  max(spDists(x=coord, longlat = FALSE, segments = TRUE))
-  buffer <-raster::buffer(coord, width=dist.buf, dissolve=TRUE)
+  buffer <- raster::buffer(coord, width=dist.buf, dissolve=TRUE)
 
   #Transformando coords de novo em matriz para rodar resto script
   coord <- occs[occs$sp==sp,c('lon','lat')]
 
   #Transformando em spatial polygon data frame
   buffer <- SpatialPolygonsDataFrame(buffer,data=as.data.frame(buffer@plotOrder), match.ID = FALSE)
-  crs(buffer)<-crs(predictors)
+  crs(buffer) <- crs(predictors)
   #Reference raster com mesmo extent e resolution que predictors
   r_buffer <- raster(ext=extent(predictors), resolution=res(predictors))
   #Rasterizando o buffer p/ geração dos ptos aleatorios
@@ -70,7 +71,8 @@ dismo.mod <- function(sp,
   #Limitando a mascara ambiental
   r_buffer <- r_buffer*(predictors[[1]]!=0)
   #Gerando pontos aleatorios no buffer
-  backgr <- randomPoints(r_buffer, n.back)
+     set.seed(seed+2)
+    backgr <- randomPoints(r_buffer, n.back)
   }
 
   colnames(backgr) <- c('lon', 'lat')
@@ -80,7 +82,7 @@ dismo.mod <- function(sp,
   pa <- c(rep(1, nrow(presvals)), rep(0, nrow(backvals)))
 
   #Data partition
-  if (n<11) part<-n else part <-part
+  if (n<11) part <- n else part  <- part
   set.seed(seed)#reproducibility
   group <- kfold(coord,part)
   set.seed(seed+1)
@@ -91,6 +93,7 @@ dismo.mod <- function(sp,
   back <- cbind(backgr,backvals)
   rbind_1 <- rbind(pres,back)
   sdmdata <- data.frame(cbind(group.all,pa,rbind_1))
+   rm(rbind_1);rm(pres);rm(back)
   write.table(sdmdata,file = paste0("./",output.folder,"/",sp,"/sdmdata.txt"))
 
 
@@ -98,8 +101,8 @@ dismo.mod <- function(sp,
   for (i in unique(group)){
     cat(paste(sp,"partition number",i,'\n'))
     pres_train <- coord[group != i, ]
-    if(n==1)pres_train<-coord[group==i,]
-    pres_test <- coord[group == i, ]
+    if(n==1)pres_train <- coord[group==i,]
+    pres_test  <-  coord[group == i, ]
 
     backg_train <- backgr[bg.grp != i,]#not used?
     backg_test <- backgr[bg.grp == i,]#new
@@ -114,7 +117,7 @@ dismo.mod <- function(sp,
 
     ##### Creates a .png plot of the initial dataset
     cat(paste("Plotting the dataset...",'\n'))
-    extent<-extent(predictors)
+    extent <- extent(predictors)
     png(filename=paste0("./",output.folder,"/",sp,"/",i,sp,"dataset.png"))
     par(mfrow=c(1,1),mar=c(5,4,3,0))
     plot(predictors[[1]]!=0,col="grey95",main=paste(sp,"part.",i),legend=F)
@@ -140,18 +143,18 @@ dismo.mod <- function(sp,
       #ebc <- evaluate(pres_test, backgr, bc, predictors)
       ebc <- evaluate(pres_test,backg_test,bc,predictors)
       thresholdbc <- ebc@t[which.max(ebc@TPR + ebc@TNR)]
-      thbc<-threshold(ebc)
+      thbc <- threshold(ebc)
       bc_TSS <- max(ebc@TPR + ebc@TNR)-1
 
       bc_cont <- predict(predictors, bc, progress='text')
       bc_bin <- bc_cont > thresholdbc
       bc_cut <- bc_cont * bc_bin
-      thbc$AUC<-ebc@auc
-      thbc$TSS<-bc_TSS
-      thbc$algoritmo<-"BioClim"
-      thbc$partition<-i
-      row.names(thbc)<-paste(sp,i,"BioClim")
-      eval<-rbind(eval,thbc)
+      thbc$AUC <- ebc@auc
+      thbc$TSS <- bc_TSS
+      thbc$algoritmo <- "BioClim"
+      thbc$partition <- i
+      row.names(thbc) <- paste(sp,i,"BioClim")
+      eval <- rbind(eval,thbc)
       writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -184,6 +187,7 @@ dismo.mod <- function(sp,
           dev.off()
         }
       }
+  rm(bc);rm(bc_cont);rm(bc_bin);rm(bc_cut)
     }
 
     if (Domain==T){
@@ -191,17 +195,17 @@ dismo.mod <- function(sp,
         do <- domain (predictors, pres_train)
         edo <- evaluate(pres_test,backg_test,do,predictors)
         thresholddo <- edo@t[which.max(edo@TPR + edo@TNR)]
-        thdo<-threshold(edo)
+        thdo <- threshold(edo)
         do_TSS <- max(edo@TPR + edo@TNR)-1
         do_cont <- predict(predictors, do, progress='text')
         do_bin <- do_cont > thresholddo
         do_cut <- do_cont * do_bin
-        thdo$AUC<-edo@auc
-        thdo$TSS<-do_TSS
-        thdo$algoritmo<-"Domain"
-        thdo$partition<-i
-        row.names(thdo)<-paste(sp,i,"Domain")
-        eval<-rbind(eval,thdo)
+        thdo$AUC <- edo@auc
+        thdo$TSS <- do_TSS
+        thdo$algoritmo <- "Domain"
+        thdo$partition <- i
+        row.names(thdo) <- paste(sp,i,"Domain")
+        eval <- rbind(eval,thdo)
         writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -229,11 +233,12 @@ dismo.mod <- function(sp,
             rm(data2)
           }
         }
+  rm(do);rm(do_cont);rm(do_bin);rm(do_cut)
       }
 
     if (maxent==T){
       cat(paste("maxent",'\n'))
-      #Sys.setenv(NOAWT=TRUE)
+      Sys.setenv(NOAWT=TRUE)#descomentei para ver
       library(rJava)
       mx <- maxent (predictors, pres_train)
       png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
@@ -246,17 +251,17 @@ dismo.mod <- function(sp,
 
       emx <- evaluate(pres_test,backg_test,mx,predictors)
       thresholdmx <- emx@t[which.max(emx@TPR + emx@TNR)]
-      thmx<-threshold(emx)
+      thmx <- threshold(emx)
       mx_TSS <- max(emx@TPR + emx@TNR)-1
       mx_cont <- predict(mx, predictors,progress='text')
       mx_bin <- mx_cont > thresholdmx
       mx_cut <- mx_cont * mx_bin
-      thmx$AUC<-emx@auc
-      thmx$TSS<-mx_TSS
-      thmx$algoritmo<-"maxent"
-      thmx$partition<-i
-      row.names(thmx)<-paste(sp,i,"maxent")
-      eval<-rbind(eval,thmx)
+      thmx$AUC <- emx@auc
+      thmx$TSS <- mx_TSS
+      thmx$algoritmo <- "maxent"
+      thmx$partition <- i
+      row.names(thmx) <- paste(sp,i,"maxent")
+      eval <- rbind(eval,thmx)
       writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -283,29 +288,31 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
+       rm(mx);rm(mx_cont);rm(mx_bin);rm(mx_cut)
     }
 
     if (Mahal==T){
       cat(paste("Mahalanobis distance",'\n'))
       ma <- mahal (predictors, pres_train)
+	if (exists("ma")){
       ema <- evaluate(pres_test,backg_test,ma,predictors)
       thresholdma <- ema@t[which.max(ema@TPR + ema@TNR)]
-      thma<-threshold(ema)
+      thma <- threshold(ema)
       ma_TSS <- max(ema@TPR + ema@TNR)-1
       ma_cont <- predict(ma, predictors,progress='text')
-      ma_cont[ma_cont < threshold(ema,'no_omission')]<-threshold(ema,'no_omission')
+      ma_cont[ma_cont < threshold(ema,'no_omission')] <- threshold(ema,'no_omission')
       ma_bin <- ma_cont > thresholdma
       ma_cut <- ma_cont
-      ma_cut[ma_cut < thresholdma]<-thresholdma
+      ma_cut[ma_cut < thresholdma] <- thresholdma
       if(minValue(ma_cut)<0) {
         ma_cut<-(ma_cut-minValue(ma_cut))/maxValue(ma_cut-minValue(ma_cut))}
 
-      thma$AUC<-ema@auc
-      thma$TSS<-ma_TSS
-      thma$algoritmo<-"Mahal"
-      thma$partition<-i
-      row.names(thma)<-paste(sp,i,"Mahal")
-      eval<-rbind(eval,thma)
+      thma$AUC <- ema@auc
+      thma$TSS <- ma_TSS
+      thma$algoritmo <- "Mahal"
+      thma$partition <- i
+      row.names(thma) <- paste(sp,i,"Mahal")
+      eval <- rbind(eval,thma)
       writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -332,9 +339,10 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-
+   rm(ma);rm(ma_cont);rm(ma_bin);rm(ma_cut)
     }
-
+else cat("Mahalanobis distance did not run")
+}
     if (GLM==T){##
       cat(paste("GLM",'\n'))
       null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
@@ -345,12 +353,12 @@ dismo.mod <- function(sp,
       glm_TSS <- max(eglm@TPR + eglm@TNR)-1
       thresholdglm <- eglm@t[which.max(eglm@TPR + eglm@TNR)]
       thglm <- threshold (eglm)
-      thglm$AUC<-eglm@auc
-      thglm$TSS<-glm_TSS
-      thglm$algoritmo<-"glm"
-      thglm$partition<-i
-      row.names(thglm)<-paste(sp,i,"glm")
-      eval<-rbind(eval,thglm)
+      thglm$AUC <- eglm@auc
+      thglm$TSS <- glm_TSS
+      thglm$algoritmo <- "glm"
+      thglm$partition <- i
+      row.names(thglm) <- paste(sp,i,"glm")
+      eval <- rbind(eval,thglm)
 
       glm_cont <- predict(predictors,glm,progress='text',type="response")
       glm_bin <- glm_cont>thresholdglm
@@ -383,7 +391,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-
+   rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut)
     }
 
     if (RF==T){
@@ -398,12 +406,12 @@ dismo.mod <- function(sp,
 
       thresholdrf <- erf@t[which.max(erf@TPR + erf@TNR)]
       thrf <- threshold(erf)
-      thrf$AUC<-erf@auc
-      thrf$TSS<-rf_TSS#raro
-      thrf$algoritmo<-"rf"
-      thrf$partition<-i
-      row.names(thrf)<-paste(sp,i,"rf")
-      eval<-rbind(eval,thrf)
+      thrf$AUC <- erf@auc
+      thrf$TSS <- rf_TSS#raro
+      thrf$algoritmo <- "rf"
+      thrf$partition <- i
+      row.names(thrf) <- paste(sp,i,"rf")
+      eval <- rbind(eval,thrf)
 
       rf_cont <- predict(predictors,rf,progress='text',type="response")
       rf_bin <- rf_cont>thresholdrf
@@ -436,6 +444,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
+   rm(rf);rm(rf_cont);rm(rf_bin);rm(rf_cut)
     }
 
     if (SVM==T){
@@ -447,12 +456,12 @@ dismo.mod <- function(sp,
       svm_TSS <- max(esvm@TPR + esvm@TNR)-1
       thresholdsvm <- esvm@t[which.max(esvm@TPR + esvm@TNR)]
       thsvm <- threshold (esvm)
-      thsvm$AUC<-esvm@auc
-      thsvm$TSS<-svm_TSS
-      thsvm$algoritmo<-"svm"
-      thsvm$partition<-i
-      row.names(thsvm)<-paste(sp,i,"svm")
-      eval<-rbind(eval,thsvm)
+      thsvm$AUC <- esvm@auc
+      thsvm$TSS <- svm_TSS
+      thsvm$algoritmo <- "svm"
+      thsvm$partition <- i
+      row.names(thsvm) <- paste(sp,i,"svm")
+      eval <- rbind(eval,thsvm)
       svm_cont <- predict(predictors,svm,progress='text')
       svm_bin <- svm_cont>thresholdsvm
       svm_cut <- svm_bin*svm_cont
@@ -489,7 +498,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-
+   rm(svm);rm(svm_cont);rm(svm_bin);rm(svm_cut)
     }
 
     if (SVM2==T){
@@ -501,12 +510,12 @@ dismo.mod <- function(sp,
       svm2_TSS <- max(esvm2@TPR + esvm2@TNR)-1
       thresholdsvm2 <- esvm2@t[which.max(esvm2@TPR + esvm2@TNR)]
       thsvm2 <- threshold (esvm2)
-      thsvm2$AUC<-esvm2@auc
-      thsvm2$TSS<-svm2_TSS
-      thsvm2$algoritmo<-"svm2"
-      thsvm2$partition<-i
-      row.names(thsvm2)<-paste(sp,i,"svm2")
-      eval<-rbind(eval,thsvm2)
+      thsvm2$AUC <- esvm2@auc
+      thsvm2$TSS <- svm2_TSS
+      thsvm2$algoritmo <- "svm2"
+      thsvm2$partition <- i
+      row.names(thsvm2) <- paste(sp,i,"svm2")
+      eval <- rbind(eval,thsvm2)
       svm2_cont <- predict(predictors,svm2,progress='text')
       svm2_bin <- svm2_cont>thresholdsvm2
       svm2_cut <- svm2_bin*svm2_cont
@@ -541,7 +550,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-
+   rm(svm2);rm(svm2_cont);rm(svm2_bin);rm(svm2_cut)
     }
 
     cat(paste("Saving the evaluation file...",sp,i,'\n'))

@@ -18,6 +18,7 @@ dismo.mod <- function(sp,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
                       #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                      mask = NULL,#
                       n.back = 500){
 
   if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
@@ -155,6 +156,12 @@ dismo.mod <- function(sp,
       thbc$partition <- i
       row.names(thbc) <- paste(sp,i,"BioClim")
       eval <- rbind(eval,thbc)
+      
+      if (class(mask) == "RasterLayer"){
+      bc_cont <- bc_cont*mask
+      bc_bin <- bc_bin*mask
+      bc_cut <- bc_cut*mask
+      }
       writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -175,7 +182,11 @@ dismo.mod <- function(sp,
           bc_proj_cut <- bc_proj_bin * bc_proj
           # Normaliza o modelo cut
           #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
-
+          if (class(mask) == "RasterLayer"){
+              bc_proj <- bc_proj*mask
+              bc_proj_bin <- bc_proj_bin*mask
+              bc_proj_cut <- bc_proj_cut*mask
+          }
           writeRaster(x=bc_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=bc_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=bc_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -206,6 +217,12 @@ dismo.mod <- function(sp,
         thdo$partition <- i
         row.names(thdo) <- paste(sp,i,"Domain")
         eval <- rbind(eval,thdo)
+        
+        if (class(mask) == "RasterLayer"){
+            do_cont <- do_cont*mask
+            do_bin <- do_bin*mask
+            do_cut <- do_cut*mask
+        }
         writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
         writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -226,7 +243,11 @@ dismo.mod <- function(sp,
             do_proj_cut <- do_proj_bin * do_proj
             # Normaliza o modelo cut
             #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
-
+            if (class(mask) == "RasterLayer"){
+                do_proj <- do_proj * mask
+                do_proj_bin <- do_proj_bin * mask
+                do_proj_cut <- do_proj_cut * mask
+            }
             writeRaster(x=do_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
             writeRaster(x=do_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
             writeRaster(x=do_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -262,6 +283,11 @@ dismo.mod <- function(sp,
       thmx$partition <- i
       row.names(thmx) <- paste(sp,i,"maxent")
       eval <- rbind(eval,thmx)
+      if (class(mask) == "RasterLayer"){
+          mx_cont <- mx_cont * mask
+          mx_bin <- mx_bin * mask
+          mx_cut <- mx_cut * mask
+      }
       writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -281,7 +307,11 @@ dismo.mod <- function(sp,
           mx_proj_cut <- mx_proj_bin * mx_proj
           # Normaliza o modelo cut
           #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
-
+          if (class(mask) == "RasterLayer"){
+              mx_proj <- mx_proj * mask
+              mx_proj_bin <- mx_proj_bin * mask
+              mx_proj_cut <- mx_proj_cut * mask
+          }
           writeRaster(x=mx_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=mx_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=mx_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -313,6 +343,12 @@ dismo.mod <- function(sp,
       thma$partition <- i
       row.names(thma) <- paste(sp,i,"Mahal")
       eval <- rbind(eval,thma)
+      
+      if (class(mask) == "RasterLayer"){
+          ma_cont <- ma_cont * mask
+          ma_bin <- ma_bin * mask
+          ma_cut <- ma_cut * mask
+      }
       writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -333,6 +369,11 @@ dismo.mod <- function(sp,
           # Normaliza o modelo cut
           #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
 
+          if (class(mask) == "RasterLayer"){
+              ma_proj <- ma_proj * mask
+              ma_proj_bin <- ma_proj_bin * mask
+              ma_proj_cut <- ma_proj_cut * mask
+          }
           writeRaster(x=ma_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=ma_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=ma_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -365,6 +406,11 @@ else cat("Mahalanobis distance did not run")
       glm_cut <- glm_bin*glm_cont
       # Normaliza o modelo cut
       #glm_cut <- glm_cut/maxValue(glm_cut)
+      if (class(mask) == "RasterLayer"){
+          glm_cont <- glm_cont * mask
+          glm_bin <- glm_bin * mask
+          glm_cut <- glm_cut * mask
+      }
       writeRaster(x=glm_cont,filename=paste0("./",output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=glm_bin,filename=paste0("./",output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=glm_cut,filename=paste0("./",output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -385,6 +431,11 @@ else cat("Mahalanobis distance did not run")
           # Normaliza o modelo cut
           #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
 
+          #           if (class(mask) == "RasterLayer"){
+#               ma_cont <- ma_cont * mask
+#               ma_bin <- ma_bin * mask
+#               ma_cut <- ma_cut * mask
+#           }
           writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=glm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -417,6 +468,11 @@ else cat("Mahalanobis distance did not run")
       rf_bin <- rf_cont>thresholdrf
       rf_cut <- rf_bin*rf_cont
       #rf1_cut <- rf1_cut/maxValue(rf1_cut)
+#       if (class(mask) == "RasterLayer"){
+#           ma_cont <- ma_cont * mask
+#           ma_bin <- ma_bin * mask
+#           ma_cut <- ma_cut * mask
+#       }
       writeRaster(x=rf_cont,filename=paste0("./",output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=rf_bin,filename=paste0("./",output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=rf_cut,filename=paste0("./",output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -437,7 +493,11 @@ else cat("Mahalanobis distance did not run")
           rf_proj_cut <- rf_proj_bin * rf_proj
           # Normaliza o modelo cut
           #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
-
+          #       if (class(mask) == "RasterLayer"){
+          #           ma_cont <- ma_cont * mask
+          #           ma_bin <- ma_bin * mask
+          #           ma_cut <- ma_cut * mask
+          #       }
           writeRaster(x=rf_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=rf_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=rf_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -469,7 +529,11 @@ else cat("Mahalanobis distance did not run")
       #TRANSFORMA 0 A 1
       svm_cont <- svm_cont/maxValue(svm_cont)
       svm_cut <- svm_cut/maxValue(svm_cut)
-
+      #       if (class(mask) == "RasterLayer"){
+      #           ma_cont <- ma_cont * mask
+      #           ma_bin <- ma_bin * mask
+      #           ma_cut <- ma_cut * mask
+      #       }
 
       writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm_bin,filename=paste0("./",output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
@@ -491,7 +555,11 @@ else cat("Mahalanobis distance did not run")
 
           # Normaliza o modelo cut
           #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
-
+          #       if (class(mask) == "RasterLayer"){
+          #           ma_cont <- ma_cont * mask
+          #           ma_bin <- ma_bin * mask
+          #           ma_cut <- ma_cut * mask
+          #       }
           writeRaster(x=svm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -523,7 +591,11 @@ else cat("Mahalanobis distance did not run")
       #TRANSFORMA 0 A 1
       svm2_cont <- svm2_cont/maxValue(svm2_cont)
       svm2_cut <- svm2_cut/maxValue(svm2_cut)
-
+      #       if (class(mask) == "RasterLayer"){
+      #           ma_cont <- ma_cont * mask
+      #           ma_bin <- ma_bin * mask
+      #           ma_cut <- ma_cut * mask
+      #       }
       writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
       writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
@@ -543,7 +615,11 @@ else cat("Mahalanobis distance did not run")
           svm2_proj_cut <- svm2_proj_bin * svm2_proj
           # Normaliza o modelo cut
           #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
-
+          #       if (class(mask) == "RasterLayer"){
+          #           ma_cont <- ma_cont * mask
+          #           ma_bin <- ma_bin * mask
+          #           ma_cut <- ma_cut * mask
+          #       }
           writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
           writeRaster(x=svm2_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)

@@ -3,7 +3,7 @@
 finalModel <- function(sp,
                         select.partitions = T,
                         threshold = c("spec_sens"),
-                        TSS.value = 0.6,
+                        TSS.value = 0.7,
                         input.folder = "models",
                         output.folder = "presfinal") {
     if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)

@@ -125,8 +125,7 @@ consolidate.data <- function(
   stat='mean',
   name='TSS_analysis'
 ){
-  
-  library("data.table")
+library("data.table")
   evall.list <- list.files(path = input.folder1, pattern=stat,full.names = T) #listing all evaluate files previusly organized. see read.eval()
   lista<-list()
   for (i in 1:length(evall.list)) {
@@ -137,7 +136,6 @@ consolidate.data <- function(
   #return(stats)
   #Saving the boxplot graph in PNG
   library(ggplot2)
-  ggsave(paste0("./",input.folder1,"/",name,".png"))
   ggplot(stats, aes(x=Tratamento, y=mean, fill=Tratamento)) + geom_boxplot(notch=TRUE) + facet_grid(~Algorithm) + 
     labs(y='') +
     theme(axis.title.x=element_blank(),
@@ -148,7 +146,9 @@ consolidate.data <- function(
           legend.title=element_text(face='bold',size=rel(1.5)),
           legend.text=element_text(size=rel(1.5)),
           legend.position="bottom")
-  dev.off()
+  ggsave(filename=paste0("./",input.folder1,"/",name,".png"))
+#  dev.off()
+#return(stats)
 }
 
 #####-----

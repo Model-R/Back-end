@@ -5,7 +5,7 @@
 #
 #Institution: International Institute for Sustainability (IIS-Rio.org)
 #
-# this script was developed to assure that all rasters has the same propreties:
+# this script was developed to ensure the documentation of all procedures and that all rasters has the same propreties:
 # Origin: 
 # Pixel resolution: 1000, 1000 (in decimal degrees)
 #Raster Extent: -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724
@@ -26,11 +26,10 @@ quit()
 --##
 ##DATA PREPARATION
 
---##PERCENT VEGETATION IN PIXEL
 --##Using data from SDM a regular vector grid was created.
 cd psql/modelagem_priorizacao/
 #Modified the SDM to Albers QGIS
-#Resampling the grid to 1000X1000 Km² due to Albers transofrmation the pixel sixe in bigger than 1000
+#Resampling the grid to 1000X1000 Km² due to Albers transofrmation the pixel size in bigger than 1000
 gdalwarp -dstnodata 0 -tr 1000 -1000 -r "near" -of GTiff Alt_Albers.tif modelo_albers_100.tif -overwrite
 
 --## Transofrming the raster to SQL raster then importing to PostGIS to use as reference raster.
@@ -77,7 +76,7 @@ select min(area_ha) from grid_priori_ma
 #backuping
 pg_dump modelagem --table=grid_priori_ma> grid_priori_ma.backup
 pg_dump modelagem --table=rast_modelo> rast_modelo.backup
-#restoring
+#restoring in other DB
 psql -f grid_priori_ma.backup iis
 psql -f rast_modelo.backup iis
 
@@ -92,7 +91,9 @@ ALTER TABLE public.rast_modelo SET SCHEMA priorizacao_ma;
 CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
 CREATE INDEX rem_11_12_albers_gist ON sos_ma.remanescentes_2011_2012 USING GIST (geom_albers);
 
---## First layer: raster with total forest area remnant.
+#####
+--##layer: raster with total forest area remnant.
+#####
 #Adciionando coluna de perct_remnant
 alter table priorizacao_ma.grid_priori_ma add column perc_remnant numeric(10,2);
 ALTER TABLE priorizacao_ma.grid_priori_ma
@@ -108,8 +109,6 @@ g.gid,
 	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom) p
 	where g.gid=p.gid;
 
---##CORRECAO!!!!!!!!
---update priorizacao_ma.grid_priori_ma set perc_remnant = 100 where id in (select id from priorizacao_ma.grid_priori_ma where perc_remnant > 100);
 --## Exporting from postgis to shp2
 \q
 exit
@@ -127,58 +126,74 @@ FROM priorizacao_ma.grid_priori_ma limit 10;
 SELECT ST_Union(ST_AsRaster(geom, rast, '32BF', height, -9999)) rast
 FROM forestcover, (SELECT rast FROM elevation LIMIT 1) rast;
 
+#####
+--##layer: raster with oportunity cost
+#####
 
+gdal_rasterize -a vt_uso -tr 1000 1000 -a_nodata 999 -l Oportunity_cost_albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/OpportunityCost_MataAtlantica/Oportunity_cost_albers.shp /home/felipe/psql/modelagem_priorizacao/OpportunityCost_MataAtlantica/Oportunity_cost_albers.tif
+
+
+#####
 --##layer: raster with area to be restored.
+#####
 #Criando uma tabela unindo geometria de todas as areas que não podem ter restauracao:
 sudo su postgres
 psql iis
---drop table  priorizacao_ma.areas_exclusao 
+--drop table  priorizacao_ma.areas_exclusao; 
 CREATE table priorizacao_ma.areas_exclusao as
 select 
 	--agua
-	massa_agua.geom, 'agua1' as id
-	from bc250.hid_massa_dagua_a as massa_agua 
+--	st_makevalid(massa_agua.geom) as geom, 'agua1' as id
+--	from bc250.hid_massa_dagua_a as massa_agua 
+	st_intersection(st_makevalid(massa_agua.geom),st_transform(grid.geom, 4674)) as geom, 'agua1' as id
+	from bc250.hid_massa_dagua_a as massa_agua join priorizacao_ma.grid_priori_ma as grid on st_intersects(massa_agua.geom,st_transform(grid.geom,4674))
+
 	union all
-	select trechomassa_agua.geom, 'agua2' as id from 
+	select st_makevalid(trechomassa_agua.geom) as geom, 'agua2' as id from 
 	bc250.hid_trecho_massa_dagua_a as trechomassa_agua
 	union all
-	select rocha_agua.geom, 'agua3' as id from
+	select st_makevalid(rocha_agua.geom) as geom, 'agua3' as id from
 	bc250.hid_rocha_em_agua_a as rocha_agua
 	--extracao vegetal
 	union all
-	select extracao_vegetacao.geom, 'extracao' as id from 
+	select st_makevalid(extracao_vegetacao.geom) as geom, 'extracao' as id from 
 	bc250.eco_area_agropec_ext_vegetal_pesca_a as extracao_vegetacao
 	--industrias
 	union all
-	select edificacao_industria.geom, 'industria1' as id from
+	select st_makevalid(edificacao_industria.geom) as geom, 'industria1' as id from
 	bc250.eco_edif_industrial_a as edificacao_industria
 	union all
-	select extracao_mineral.geom, 'industria2' as id from 
+	select st_makevalid(extracao_mineral.geom) as geom, 'industria2' as id from 
 	bc250.eco_ext_mineral_a as extracao_mineral
 	--area edificada
 	union all
-	select loc_area_edificada_a.geom, 'area_urbana1' as id from
+	select st_makevalid(loc_area_edificada_a.geom) as geom, 'area_urbana1' as id from
 	bc250.loc_area_edificada_a
 	--UCs excluindo APAs
 	union all
-	select ucs.geom, 'uc_pi' as id from
+	select st_makevalid(ucs.geom) as geom, 'uc_pi' as id from
 	bc250.lim_unidade_protecao_integral_a as ucs
 	union all
-	select ucs2.geom, 'uc_us' as id from 
+	select st_makevalid(ucs2.geom) as geom, 'uc_us' as id from 
 	bc250.lim_unidade_uso_sustentavel_a as ucs2 where sigla = 'APA'
 	--area militar
 	union all
-	select militar.geom, 'area_militar' as id from
+	select st_makevalid(militar.geom) as geom, 'area_militar' as id from
 	bc250.lim_terra_publica_a as militar
 	--DESCONSIDERADO: mineração em fase de mineracao
 	--union all select dnpm.geom from dnpm.dnpm where dnpm.fase in ('CONCESSÃO DE LAVRA','LAVRA GARIMPEIRA','LICENCIAMENTO','REGISTRO DE EXTRAÇÃO')
 	--Area urbana
 	union all
-	select ST_Force2D(urbana.geom) as geom, 'area_urbana2' as id from ibge.setores_censitarios as urbana where urbana.tipo='URBANO'
+	select st_makevalid(ST_Force2D(urbana.geom)) as geom, 'area_urbana2' as id from ibge.setores_censitarios as urbana where urbana.tipo='URBANO'
 	--Area de floresta
 	union all
-	select florestas.geom, 'florestas' as id from sos_ma.remanescentes_2011_2012 as florestas where florestas.legenda like 'Decremento%' or florestas.legenda like 'NMata%' or florestas.legenda like 'Desmatamento%';
-update priorizacao_ma.areas_exclusao set geom = geom::geometry(MultiPolygon,4674);
+	select st_makevalid(florestas.geom) as geom, 'florestas' as id from sos_ma.remanescentes_2011_2012 as florestas where florestas.legenda like 'Decremento%' or florestas.legenda like 'NMata%' or florestas.legenda like 'Desmatamento%';
+
+--##update priorizacao_ma.areas_exclusao set geom = geom::geometry(MultiPolygon,4674); DEU ERRO
+
+CREATE table priorizacao_ma.areas_exclusao2 as
+	select st_union(geom)::geometry(MultiPolygon,4674) as geom from priorizacao_ma.areas_exclusao;
+
 ALTER TABLE priorizacao_ma.areas_exclusao add column geom_albers geometry(MultiPolygon,102033);
 update priorizacao_ma.areas_exclusao set geom = st_transform(geom, 102033);
 

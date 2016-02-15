@@ -147,12 +147,15 @@ library("data.table")
           legend.text=element_text(size=rel(1.5)),
           legend.position="bottom")
   ggsave(filename=paste0("./",input.folder1,"/",name,".png"))
-#  dev.off()
+#  dev.off() #Not necessary when using ggsave
 #return(stats)
+  rm(stats)
+  rm(lista)
+  rm(evall.list)
 }
 
 #####-----
-#Small script to save the species name and final occurrence.
+#Function to save the species name and final occurrence.
 species.table <- function(
   output.folder="TSS_Evaluate",
   table.name="n.sp.modelado"){
@@ -166,4 +169,29 @@ n.sp.modelado <- subset(n.sp, Var1 %in% (names.sp[N]))
 #head(n.sp.modelado)
 #dim(n.sp.modelado)
 write.csv(n.sp.modelado, paste0(output.folder,'/',table.name,'.csv'))
+rm(n.sp)
+rm(n.sp.modelado)
 }
+
+#####-----
+#Functio for making and cropping rasterLayer
+rasterCrop<- function(sp,
+                      input.folder = 'buffermax',
+                      mascara = raster,
+                      crop = vctor_shape
+){
+  library(raster)
+  rasters <-
+    list.files(
+      path = paste0(input.folder,"/",sp), pattern = ".tif$",full.names = T
+    )
+  mod <- NULL
+  for (i in 1:length(rasters)) {
+    ?raster  
+    mod <- raster(rasters[i])
+    #plot(mod)
+    mod <- mask(mod, mascara)
+    mod <- crop(mod, crop)
+    writeRaster(mod, filename=rasters[i], overwrite = T,format = "GTiff")
+    rm(mod)
+    }}

@@ -1,12 +1,11 @@
 ######### Final modeling: one model per algorithm ----
 
-final.model <- function(sp,
+finalModel <- function(sp,
                         select.partitions = T,
-
+                        algoritmos = c("maxent", "rf", "svm"),#NULL,
                         threshold = c("spec_sens"),
-                        TSS.value = 0.2,
-
-                        input.folder = "models",
+                        TSS.value = 0.7,
+                        input.folder = "mods",
                         output.folder = "presfinal") {
     if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)
         dir.create(paste0("./",input.folder,"/",sp,"/",output.folder), recursive = TRUE)
@@ -17,9 +16,7 @@ final.model <- function(sp,
     library("data.table")
     cat(paste("Reading the evaluation files","\n"))
     evall <-
-        list.files(
-            path = paste0(input.folder,"/",sp), pattern = paste0("evaluate",sp),full.names = T
-        )
+        list.files( path = paste0(input.folder,"/",sp), pattern = paste0("evaluate",sp),full.names = T)
     lista <- list()
     for (i in 1:length(evall)) {
         lista[[i]] <- read.table(file = evall[i],header = T,row.names = 1)
@@ -28,7 +25,8 @@ final.model <- function(sp,
     stats <- as.data.frame(stats)
 
     #Extracts only for the selected algorithm
-    algoritmos <- unique(stats$algoritmo)
+    if (exists("algoritmos")==F) algoritmos <- unique(stats$algoritmo)
+    algoritmos <- as.factor(algoritmos)
     #algo <- algoritmos[1]
     todo <- stack()
     for (algo in algoritmos) {
@@ -71,7 +69,7 @@ final.model <- function(sp,
             #en caso de que sea solo uno varios modelos son el mismo
             if (length(sel.index) == 1) {
                 cat(paste(
-                    length(sel.index), "partitions was selected for",sp,algo,"\n"
+                    length(sel.index), "partition was selected for",sp,algo,"\n"
                 ))
 
                 final <- stack(bin.sel,#[3],
@@ -109,7 +107,7 @@ final.model <- function(sp,
 
 
                 if (exists("final")) {
-                    plot(final)
+                    #plot(final)
                     #Escribe final
                     writeRaster(
                         x = final,filename = paste0(
@@ -140,4 +138,3 @@ final.model <- function(sp,
     return(todo)
     print(date())
 }
-

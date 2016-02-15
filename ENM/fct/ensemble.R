@@ -1,34 +1,42 @@
-
-
 ensemble <- function(sp,
                      input.folder1="models",##onde estao os modelos em geral ("models")
                      input.folder2="presfinal", ##onde estao os modelos finais ("presfinal")
+                     output.folder="ensemble",
                      occs=spp.filt,
-                     which.models=c("Final.bin.mean3","Final.mean.bin7"),
-                     output.folder="ensemble"){
+                     which.models = c("Final.bin.mean3","Final.mean.bin7"),
+					 consensus = F,
+                     consensus.level=0.5#cuanto de los modelos sea retenido: 0.5majority
+                     ){
 
     ##pasta de output
-    if (file.exists(paste0("./",input.folder1,"/",sp,"/",output.folder,"/"))==FALSE) dir.create(paste0("./",input.folder1,"/",sp,"/",output.folder,"/")) #
+    if (file.exists(paste0("./",input.folder1,"/",sp,"/",output.folder,"/"))==FALSE){
+    dir.create(paste0("./",input.folder1,"/",sp,"/",output.folder,"/"))
+     }#
     library(raster)
     library(scales)
     library(maps)
 
     ## para cada tipo de modelo
-    for (whi in unique(which.models)){
-        cat(paste("Making the ensemble model for",sp,whi,"\n"))
-        #lê os arquivos
+    for (i in 1:length(which.models)){
+      whi <- which.models[i]
+
+    cat(paste(whi,"-",sp,"\n"))        #lê os arquivos
         files <- list.files(paste0("./",input.folder1,"/",sp,"/",input.folder2),full.names=T,pattern=paste0(whi,sp))
 
-        tiffiles<-files[grep(".tif",files,fixed=T)]##aqui eu pego só os tif
+        tif.files <- files[grep(".tif",files,fixed=T)]##aqui eu pego só os tif
 
-        if(length(tiffiles)==0) cat(paste("No models to ensemble from for",sp,"\n"))
-        if(length(tiffiles)!=0) {
-            cat(paste("The following files were found:",tiffiles,"\n","Number of models:",length(tiffiles),"\n"))
-            mod2<-stack(tiffiles)
-        }
+        if(length(tif.files)==0) {
+            cat(paste("No models to ensemble from for",sp,"\n"))
+        } else {
+            cat(paste(sp, "- Number of models:",length(tif.files),"\n"))
+            mod2 <- raster::stack(tif.files)
+            if(length(tif.files)==1){
+                ensemble.m <- mod2
+            } else {
         #plot(mod2)
-
         ensemble.m <- mean(mod2)
+        ensemble.sd <- raster::overlay(mod2,fun=function(x){return(sd(x,na.rm=T))})
+            }
         coord <- occs[occs$sp==sp,c('lon','lat')]
 
         #par(mar=c(5,4,1,1))
@@ -36,31 +44,31 @@ ensemble <- function(sp,
         #points(coord,pch=19,col=alpha("grey60",0.6))
         #map('world',c('',"South America"),add=T,col="grey")
 
-
-
-
-
         png(filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble.png"),res=300,width=410*300/72,height=480*300/72)
         par(mfrow=c(1,1),mar=c(3,4,4,0))
         plot(ensemble.m,main=paste(sp,whi),legend=F,
         cex.main=1,font.main=3)
         map('world',c('',"South America"),add=T,col="grey")
-        points(coord,pch=19,cex=0.8,col=alpha("grey60",0.6))
+        points(coord,pch=21,cex=0.6,bg=scales::alpha("cyan",0.6))
         dev.off()
 
         # o ensemble cru
         writeRaster(ensemble.m,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble.tif"),overwrite=T)
-        ####aqui filtra 30% dos modelos e cria um binário de novo
-        writeRaster(ensemble.m>=0.3,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble30.tif"),overwrite=T)
-        png(filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble30.png"),res=300,width=410*300/72,height=480*300/72)
+
+        ####Consensus models
+       if (consensus == TRUE){
+         ensemble.consensus <- ensemble.m >= consensus.level
+        writeRaster(ensemble.consensus,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble",consensus.level*100,".tif"),overwrite=T)
+
+
+        png(filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble",consensus.level*100,".png"),res=300,width=410*300/72,height=480*300/72)
         par(mfrow=c(1,1),mar=c(3,4,4,0))
-        plot(ensemble.m>=0.3,main=paste(sp,whi,"30%"),legend=F,
-             cex.main=1,font.main=3)
+        plot(ensemble.consensus,main=paste(whi,consensus.level*100),legend=F,cex.main=1,font.main=3)
         map('world',c('',"South America"),add=T,col="grey")
-        points(coord,pch=19,cex=0.8,col=alpha("grey60",0.6))
+        points(coord,pch=19,cex=0.3,col=scales::alpha("cyan",0.6))
         dev.off()
-
+		}
     }
-
+}
     #return(ensemble.m)
 }

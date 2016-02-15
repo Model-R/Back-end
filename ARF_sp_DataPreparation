@@ -5,64 +5,229 @@
 #
 #Institution: International Institute for Sustainability (IIS-Rio.org)
 #
-# this script was developed to assure that all rasters has the same propreties:
-# Origin: -57.893, -2.80871
-# Pixel resolution: 0.01, 0.01 (in decimal degrees)
-#Raster Extent: -57.8930144637443078, -33.7587136810458617, -34.8230144637443075, -2.8087136810458628
-#SRC (WGS84): +proj=longlat +datum=WGS84 +no_defs
+# this script was developed to ensure the documentation of all procedures and that all rasters has the same propreties:
+# Origin: 
+# Pixel resolution: 1000, 1000 (in decimal degrees)
+#Raster Extent: -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724
+#SRC (Albers):
 #
+###############
+- calculate the sdm's in the 0.01 degree grid, as you have already done (that is presumably finished by now)
+
+- project the final output of the SDM (the binary raster that is the product of the 3 binary partitioned rasters) to the South America Albers projection that Felipe had picked out and resample the cells to exactly 1000m x 1000m (nearest neighbour resampling)
+
+- that raster then becomes the template for all the other datasets (carbon, cost, etc) to be aligned to
+
+I don't think it is worth relcalculating all those SDMs in a projected CS.
+
 ###############
 --##saindo do R
 quit()
 --##
 ##DATA PREPARATION
---##Using data from SDM a regular vector grid was created and imported to PgSQL:
-shp2pgsql -W LATIN1 -s 102033 grid_priori_ma_Albers.shp public.grid_priori_ma_Albers>grid_modelos.sql
 
-. Before running analysis, the external grids were deleted:
---##Removing the externar grid (using R)
+--##Using data from SDM a regular vector grid was created.
+cd psql/modelagem_priorizacao/
+#Modified the SDM to Albers QGIS
+#Resampling the grid to 1000X1000 Km² due to Albers transofrmation the pixel size in bigger than 1000
+gdalwarp -dstnodata 0 -tr 1000 -1000 -r "near" -of GTiff Alt_Albers.tif modelo_albers_100.tif -overwrite
+
+--## Transofrming the raster to SQL raster then importing to PostGIS to use as reference raster.
+raster2pgsql -c -C -s 102033 -b 1 -I -M modelo_albers_100.tif public.rast_modelo>rast.sql
+sudo su
+su postgres
+	--##Importing sql file to DB
+psql -d modelagem -f rast.sql 
+
+--##After converted the raster to shp, saving it as SQL and importing to PostGIS
+shp2pgsql -W LATIN1 -s 102033 grid_modelo_Albers.shp public.grid_priori_ma>grid.sql
+sudo su
+su postgres
+	--##Before, Albers projection must be implemented in DB:
+INSERT into spatial_ref_sys (srid, auth_name, auth_srid, proj4text, srtext) values ( 102033, 'ESRI', 102033, '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs ', 'PROJCS["South_America_Albers_Equal_Area_Conic",GEOGCS["GCS_South_American_1969",DATUM["South_American_Datum_1969",SPHEROID["GRS_1967_Truncated",6378160,298.25]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["False_Easting",0],PARAMETER["False_         ",0],PARAMETER["longitude_of_center",-60],PARAMETER["Standard_Parallel_1",-5],PARAMETER["Standard_Parallel_2",-42],PARAMETER["latitude_of_center",-32],UNIT["Meter",1],AUTHORITY["EPSG","102033"]]');
+	--##Importing sql file to DB
+psql -d modelagem -f grid.sql 
+
+--##Removing the external grid (using R)
+R
+install.packages('RPostgreSQL')
 library(RPostgreSQL)
-con<-dbConnect(drv="PostgreSQL", host="localhost", port=5432, dbname="iis", user="postgres", password="postgres")
+con<-dbConnect(drv="PostgreSQL", host="localhost", port=5432, dbname="modelagem", user="postgres", password="postgres")
 for (i in 1:500){
 start=Sys.time()
 print(i)
-Dados_Disponíveis<-dbGetQuery(con, "DELETE from public.grid_priori_ma where gid in (select gid from public.grid_priori_ma where st_disjoint(geom, (select st_transform(b.geom, 4674) from biorregioes.ma_1148 as b)) limit 10000);")
+Dados_Disponíveis<-dbGetQuery(con, "DELETE from public.grid_priori_ma where gid in (select gid from public.grid_priori_ma where st_disjoint(geom, (select st_transform(b.geom, 102033) from biorregioes.ma_1148 as b)) limit 10000);")
 print(Sys.time()-start)
 }
+quit()
+
+#Adciionando coluna de area em ha
+alter table priorizacao_ma.grid_priori_ma add column area_ha numeric(10,2);
+alter table priorizacao_ma.grid_priori_ma add column area numeric(10,2);
+
+#Adicionando informacao de area
+update priorizacao_ma.grid_priori_ma set area_ha = st_area(geom)/10000;
+update priorizacao_ma.grid_priori_ma set area = st_area(geom);
+
+#Testing
+select max(area_ha) from grid_priori_ma 
+select min(area_ha) from grid_priori_ma 
+
+#backuping
+pg_dump modelagem --table=grid_priori_ma> grid_priori_ma.backup
+pg_dump modelagem --table=rast_modelo> rast_modelo.backup
+#restoring in other DB
+psql -f grid_priori_ma.backup iis
+psql -f rast_modelo.backup iis
 
 #Changing the schema
-ALTER TABLE grids.grid_priori_ma SET SCHEMA grids;
+psql iis
 
---##Adequação de geometrias:
-ALTER TABLE grids.grid_priori_ma ADD COLUMN geom_albers geometry(MultiPolygon,102033);
-ALTER TABLE sos_ma.remanescentes_2011_2012 ADD COLUMN geom_albers geometry(MultiPolygon,102033);
---##Transformando geom p albers
-UPDATE grids.grid_priori_ma  SET geom_albers=ST_Transform(geom,102033); 
-UPDATE sos_ma.remanescentes_2011_2012  SET geom_albers=ST_Transform(geom,102033); 
+CREATE schema priorizacao_ma
+ALTER TABLE public.grid_priori_ma SET SCHEMA priorizacao_ma;
+ALTER TABLE public.rast_modelo SET SCHEMA priorizacao_ma;
 
 #Creating spatial index
 CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
-CREATE INDEX grid_priori_ma_geom_albers_gist ON grids.grid_priori_ma USING GIST (geom_albers);
 CREATE INDEX rem_11_12_albers_gist ON sos_ma.remanescentes_2011_2012 USING GIST (geom_albers);
 
+#####
+--##layer: raster with total forest area remnant.
+#####
+#Adciionando coluna de perct_remnant
+alter table priorizacao_ma.grid_priori_ma add column perc_remnant numeric(10,2);
+ALTER TABLE priorizacao_ma.grid_priori_ma
+	ADD COLUMN perc_remnant numeric(10,2) NOT NULL DEFAULT(0);
 
---## First layer: raster with total forest area remnant.
-DROP TABLE IF EXISTS public.percent_remnant_area;
-	CREATE TABLE public.percent_remnant_area as select row_number () over () as id, round(sum(st_area(st_intersection(g.geom_albers, f.geom_albers)))::numeric/10000,2) as code, g.geom_albers 
-	from grids.grid_priori_ma as g 
-	left join sos_ma.remanescentes_2011_2012 as f 
-	on ((g.geom_albers && f.geom_albers) and st_intersects(g.geom_albers, f.geom_albers)) where f.legenda <> 'Área urbana' Group by g.geom_albers
+#Adicionando percent area
+update priorizacao_ma.grid_priori_ma as g set perc_remnant = p.perc_veg from (
+select 
+g.gid,
+(round(st_area(st_union(st_intersection(g.geom, geom_albers)))::numeric/g.area,2))*100 as perc_veg 
+	from priorizacao_ma.grid_priori_ma as g 
+	join sos_ma.remanescentes_2011_2012 as f 
+	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom) p
+	where g.gid=p.gid;
+
+--## Exporting from postgis to shp2
+\q
+exit
+
+pgsql2shp -f /home/felipe/psql/forest_area.shp -h localhost -u postgres -P postgres iis priorizacao_ma.grid_priori_ma
+
+--##Rasterizing
+gdal_rasterize -a PERC_REMNA -tr 1000 1000 -a_nodata 999 -l forest_area -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/forest_area.shp /home/felipe/psql/forest_area.tif
+gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.gz
+
+--##Trying to rasterize in postgis
+SELECT ronw_number() over() as id, ST_AsRaster(geom, (select rast from priorizacao_ma.rast_modelo limit 1), '32BF', perc_remnant, -9999)) 
+FROM priorizacao_ma.grid_priori_ma limit 10;
+
+SELECT ST_Union(ST_AsRaster(geom, rast, '32BF', height, -9999)) rast
+FROM forestcover, (SELECT rast FROM elevation LIMIT 1) rast;
+
+#####
+--##layer: raster with oportunity cost
+#####
+
+gdal_rasterize -a vt_uso -tr 1000 1000 -a_nodata 999 -l Oportunity_cost_albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/OpportunityCost_MataAtlantica/Oportunity_cost_albers.shp /home/felipe/psql/modelagem_priorizacao/OpportunityCost_MataAtlantica/Oportunity_cost_albers.tif
 
 
-pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_transform(st_intersection(g.geom, f.geom),102033)))::numeric/10000,2) as code, g.geom from grids.grid_priori_ma as g inner join sos_ma.remanescentes_2011_2012 as f on ((g.geom && f.geom) and st_intersects(g.geom, f.geom)) where f.legenda <> 'Área urbana' Group by g.geom"
+#####
+--##layer: raster with area to be restored.
+#####
+#Criando uma tabela unindo geometria de todas as areas que não podem ter restauracao:
+sudo su postgres
+psql iis
+--drop table  priorizacao_ma.areas_exclusao; 
+CREATE table priorizacao_ma.areas_exclusao as
+select 
+	--agua
+--	st_makevalid(massa_agua.geom) as geom, 'agua1' as id
+--	from bc250.hid_massa_dagua_a as massa_agua 
+	st_intersection(st_makevalid(massa_agua.geom),st_transform(grid.geom, 4674)) as geom, 'agua1' as id
+	from bc250.hid_massa_dagua_a as massa_agua join priorizacao_ma.grid_priori_ma as grid on st_intersects(massa_agua.geom,st_transform(grid.geom,4674))
+
+	union all
+	select st_makevalid(trechomassa_agua.geom) as geom, 'agua2' as id from 
+	bc250.hid_trecho_massa_dagua_a as trechomassa_agua
+	union all
+	select st_makevalid(rocha_agua.geom) as geom, 'agua3' as id from
+	bc250.hid_rocha_em_agua_a as rocha_agua
+	--extracao vegetal
+	union all
+	select st_makevalid(extracao_vegetacao.geom) as geom, 'extracao' as id from 
+	bc250.eco_area_agropec_ext_vegetal_pesca_a as extracao_vegetacao
+	--industrias
+	union all
+	select st_makevalid(edificacao_industria.geom) as geom, 'industria1' as id from
+	bc250.eco_edif_industrial_a as edificacao_industria
+	union all
+	select st_makevalid(extracao_mineral.geom) as geom, 'industria2' as id from 
+	bc250.eco_ext_mineral_a as extracao_mineral
+	--area edificada
+	union all
+	select st_makevalid(loc_area_edificada_a.geom) as geom, 'area_urbana1' as id from
+	bc250.loc_area_edificada_a
+	--UCs excluindo APAs
+	union all
+	select st_makevalid(ucs.geom) as geom, 'uc_pi' as id from
+	bc250.lim_unidade_protecao_integral_a as ucs
+	union all
+	select st_makevalid(ucs2.geom) as geom, 'uc_us' as id from 
+	bc250.lim_unidade_uso_sustentavel_a as ucs2 where sigla = 'APA'
+	--area militar
+	union all
+	select st_makevalid(militar.geom) as geom, 'area_militar' as id from
+	bc250.lim_terra_publica_a as militar
+	--DESCONSIDERADO: mineração em fase de mineracao
+	--union all select dnpm.geom from dnpm.dnpm where dnpm.fase in ('CONCESSÃO DE LAVRA','LAVRA GARIMPEIRA','LICENCIAMENTO','REGISTRO DE EXTRAÇÃO')
+	--Area urbana
+	union all
+	select st_makevalid(ST_Force2D(urbana.geom)) as geom, 'area_urbana2' as id from ibge.setores_censitarios as urbana where urbana.tipo='URBANO'
+	--Area de floresta
+	union all
+	select st_makevalid(florestas.geom) as geom, 'florestas' as id from sos_ma.remanescentes_2011_2012 as florestas where florestas.legenda like 'Decremento%' or florestas.legenda like 'NMata%' or florestas.legenda like 'Desmatamento%';
+
+--##update priorizacao_ma.areas_exclusao set geom = geom::geometry(MultiPolygon,4674); DEU ERRO
+
+CREATE table priorizacao_ma.areas_exclusao2 as
+	select st_union(geom)::geometry(MultiPolygon,4674) as geom from priorizacao_ma.areas_exclusao;
+
+ALTER TABLE priorizacao_ma.areas_exclusao add column geom_albers geometry(MultiPolygon,102033);
+update priorizacao_ma.areas_exclusao set geom = st_transform(geom, 102033);
 
 
---##Test with left join
-pgsql2shp -f ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp -h localhost -u postgres -P postgres iis "select row_number () over () as id, round(sum(st_area(st_intersection(g.geom_albers, f.geom_albers)))::numeric/10000,2) as code, g.geom_albers from grids.grid_priori_ma as g left join sos_ma.remanescentes_2011_2012 as f on ((g.geom_albers && f.geom_albers) and st_intersects(g.geom_albers, f.geom_albers)) where f.legenda <> 'Área urbana' Group by g.geom_albers"
+#Adciionando coluna de perct_restoration
+ALTER TABLE priorizacao_ma.grid_priori_ma add column perct_restoration numeric(10,2) NOT NULL DEFAULT(0);
 
---##Converting to raster
-gdal_rasterize -a code -tr 0.01 0.01 -a_nodata 999 -l forest.area -te -57.8930144637443078 -33.7587136810458617 -34.8230144637443075 -2.8087136810458628 ~/Projetos/ARF_spatial_planning/Layer_preparation/forest.area.shp ~/Projetos/ARF_spatial_planning/final_layers/forest.area.tif
+#Adicionando percent restoration area
+update priorizacao_ma.grid_priori_ma as g set perc_restoration = p.perc_rest from (
+select 
+g.gid,
+--(round(st_area
+--	(st_union(
+		st_intersection(
+			st_Difference(g.geom, f.geom_albers)
+			,st_transform(ma.geom, 102033))
+--		))::numeric/g.area,2
+--	))*100
+ as geom
+	from priorizacao_ma.grid_priori_ma as g 
+	join priorizacao_ma.areas_exclusao as f 
+	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers)) 
+	join biorregioes.ma_1148 as ma on ((g.geom && st_transform(ma.geom, 102033)) and st_intersects(g.geom, st_transform(ma.geom, 102033)))
+	--where f.legenda <> 'Área urbana' 
+	--Group by g.gid, g.geom
+	--) p
+	--where g.gid=p.gid 
+	limit 1;
 
+--##CRiando nova tabela unindo as geometrias
+create table priorizacao_ma.areas_exclusao2 as 
+select row_number() over() as id, st_union(st_makevalid(exclusao.geom))::geometry(MultiPolygon,4674) 
+as geom
+from priorizacao_ma.areas_exclusao as exclusao;
 #####
 ##DATA CONVERSION
 #####

@@ -138,4 +138,3 @@ finalModel <- function(sp,
     return(todo)
     print(date())
 }
-

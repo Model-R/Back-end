@@ -638,4 +638,3 @@ else cat("Mahalanobis distance did not run")
     cat("DONE",'\n')
     print(date())
   }
-

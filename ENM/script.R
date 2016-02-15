@@ -187,3 +187,23 @@ lapply(sort(names.sp[N])[2:12],
        output.folder="ensemble")
 
 
+#### teste final model com anfibios
+
+anf.names <- list.files("./mods")
+args(finalModel)
+
+
+lapply(anf.names[2],
+       finalModel,
+       input.folder="mods",
+       output.folder="finalmods")
+
+source("fct/ensemble.R")
+args(ensemble)
+lapply(anf.names[2],
+       ensemble,
+       input.folder1="mods",
+       input.folder2="finalmods",
+       output.folder = "ensemble",
+       occs=occs
+       )

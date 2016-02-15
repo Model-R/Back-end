@@ -4,12 +4,12 @@ ensemble <- function(sp,
                      output.folder="ensemble",
                      occs=spp.filt,
                      which.models = c("Final.bin.mean3","Final.mean.bin7"),
-					 consensus.level=0.3#cuanto de los modelos sea retenido
+					 consensus.level=0.5#cuanto de los modelos sea retenido: 0.5majority
                      ){
 
     ##pasta de output
     if (file.exists(paste0("./",input.folder1,"/",sp,"/",output.folder,"/"))==FALSE){
-    dir.create(paste0("./",input.folder1,"/",sp,"/",output.folder,"/")) 
+    dir.create(paste0("./",input.folder1,"/",sp,"/",output.folder,"/"))
      }#
     library(raster)
     library(scales)
@@ -18,21 +18,24 @@ ensemble <- function(sp,
     ## para cada tipo de modelo
     for (i in 1:length(which.models)){
       whi <- which.models[i]
-    
+
     cat(paste(whi,"-",sp,"\n"))        #lê os arquivos
         files <- list.files(paste0("./",input.folder1,"/",sp,"/",input.folder2),full.names=T,pattern=paste0(whi,sp))
 
-        tif.files<-files[grep(".tif",files,fixed=T)]##aqui eu pego só os tif
+        tif.files <- files[grep(".tif",files,fixed=T)]##aqui eu pego só os tif
 
-        if(length(tif.files)==0) cat(paste("No models to ensemble from for",sp,"\n"))
-        if(length(tif.files)!=0) {
+        if(length(tif.files)==0) {
+            cat(paste("No models to ensemble from for",sp,"\n"))
+        } else {
             cat(paste(sp, "- Number of models:",length(tif.files),"\n"))
             mod2 <- raster::stack(tif.files)
-        
+            if(length(tif.files)==1){
+                ensemble.m <- mod2
+            } else {
         #plot(mod2)
         ensemble.m <- mean(mod2)
         ensemble.sd <- raster::overlay(mod2,fun=function(x){return(sd(x,na.rm=T))})
-
+            }
         coord <- occs[occs$sp==sp,c('lon','lat')]
 
         #par(mar=c(5,4,1,1))
@@ -50,12 +53,12 @@ ensemble <- function(sp,
 
         # o ensemble cru
         writeRaster(ensemble.m,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble.tif"),overwrite=T)
-        
+
         ####Consensus models
-        ensemble.consensus <- ensemble.m>=consensus.level
+        ensemble.consensus <- ensemble.m >= consensus.level
         writeRaster(ensemble.consensus,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble",consensus.level*100,".tif"),overwrite=T)
-       
-        
+
+
         png(filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble",consensus.level*100,".png"),res=300,width=410*300/72,height=480*300/72)
         par(mfrow=c(1,1),mar=c(3,4,4,0))
         plot(ensemble.consensus,main=paste(whi,consensus.level*100),legend=F,cex.main=1,font.main=3)

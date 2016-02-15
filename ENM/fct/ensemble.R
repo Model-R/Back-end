@@ -4,7 +4,8 @@ ensemble <- function(sp,
                      output.folder="ensemble",
                      occs=spp.filt,
                      which.models = c("Final.bin.mean3","Final.mean.bin7"),
-					 consensus.level=0.5#cuanto de los modelos sea retenido: 0.5majority
+					 consensus = F,
+                     consensus.level=0.5#cuanto de los modelos sea retenido: 0.5majority
                      ){
 
     ##pasta de output
@@ -55,7 +56,8 @@ ensemble <- function(sp,
         writeRaster(ensemble.m,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble.tif"),overwrite=T)
 
         ####Consensus models
-        ensemble.consensus <- ensemble.m >= consensus.level
+       if (consensus == TRUE){
+         ensemble.consensus <- ensemble.m >= consensus.level
         writeRaster(ensemble.consensus,filename=paste0("./",input.folder1,"/",sp,"/",output.folder,"/",sp,"_",whi,"_ensemble",consensus.level*100,".tif"),overwrite=T)
 
 
@@ -67,6 +69,6 @@ ensemble <- function(sp,
         dev.off()
 		}
     }
-
+}
     #return(ensemble.m)
 }

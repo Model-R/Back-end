@@ -195,3 +195,96 @@ rasterCrop<- function(sp,
     writeRaster(mod, filename=rasters[i], overwrite = T,format = "GTiff")
     rm(mod)
     }}
+
+
+#Function to analyse perc ensemble between partitions and algorithms----
+partitionEnsemble <- function(
+  sp,
+  projeto="FLORA_buffermax2",
+  input.folder='presfinal',
+  algoritmos = c("maxent", "rf", "svm")){
+  library(raster)
+  library(data.table)
+  for (algo in 1:length(algoritmos)){
+    
+    #Lista raster binario saida 7 do algoritmo
+    modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0("bin7",sp,algoritmos[algo],'.tif'))
+    if(length(modelos.bin)==0){
+      
+      ensemble<-data.frame(ensemble=NA)
+      ensemble$n.sp<-table2[(which(table2$sp==sp)),2]
+      ensemble$algoritmo <- algoritmos[algo]
+      ensemble$nome.sp <- sp
+      ensemble_list[[algo]] <- ensemble
+    } else{
+      
+      #carrega raster
+      mod.bin <- raster(modelos.bin)
+      
+      #estatistica quantidade de pixels
+      zonal.result <- zonal(zonal_maks, mod.bin, fun='count', na.rm=TRUE, digits=2)
+      zonal.result <- as.data.frame(zonal.result)
+      
+      #separa apenas resultado impoirtante
+      ensemble <- zonal.result[nrow(zonal.result),ncol(zonal.result)]/sum(zonal.result[c(2:nrow(zonal.result)),ncol(zonal.result)])
+      
+      rm(zonal.result)
+      
+      #Construindo resultados
+      ensemble<-as.data.frame(ensemble)
+      ensemble$n.sp<-table2[(which(table2$sp==sp)),2]
+      ensemble$algoritmo <- algoritmos[algo]
+      ensemble$nome.sp <- sp
+      ensemble_list[[algo]] <- ensemble
+      rm(ensemble)
+    }
+  }
+  ensemble_list <- na.omit(rbindlist(ensemble_list))
+  return(ensemble_list)
+}
+
+#Function to analyse the percentual ensemble between <> algorithms/species----
+spEnsemble <- function(
+  sp,
+  projeto="FLORA_buffermax2",
+  input.folder='ensemble'){
+  library(raster)
+  library(data.table)
+  #Lista raster binario saida 7 do algoritmo
+  modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7",'_ensemble.tif'))
+  if(length(modelos.bin)==0){
+    ensemble<-data.frame(ensemble=NA)
+    ensemble$n.sp<-table2[(which(table2$sp==sp)),2]
+    ensemble$sp <- sp
+  }else{
+    
+    #carrega raster
+    mod.bin <- raster(modelos.bin)
+    
+    #estatistica quantidade de pixels
+    zonal.result <- zonal(zonal_maks, mod.bin, fun='count', na.rm=TRUE, digits=2)
+    zonal.result <- as.data.frame(zonal.result)
+    
+    #separa apenas resultado impoirtante
+    ensemble <- zonal.result[nrow(zonal.result),ncol(zonal.result)]/sum(zonal.result[c(2:nrow(zonal.result)),ncol(zonal.result)])
+    
+    rm(zonal.result)
+    
+    #Construindo resultados
+    ensemble<-as.data.frame(ensemble)
+    ensemble$n.sp<-table2[(which(table2$sp==sp)),2]
+    ensemble$sp <- sp
+  }
+  return(na.omit(ensemble))
+}
+
+# Funtion to conver raaster to smaller type----
+rast.convert<-function(sp,
+                       projeto='FLORA_buffermax2',
+                       input.folder="ensemble"){
+  modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7_ensemble50.tif"))
+  if(length(modelos.bin)==0){} else {
+    modelos.bin<-raster(modelos.bin)
+    writeRaster(modelos.bin, filename = paste0("./",projeto,"/final/",sp,".tif"), datatype="INT1U")
+  }
+}

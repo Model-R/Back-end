@@ -28,7 +28,7 @@ ensemble <- function(sp,
         if(length(tif.files)==0) {
             cat(paste("No models to ensemble from for",sp,"\n"))
         } else {
-            cat(paste(sp, "- Number of models:",length(tif.files),"\n"))
+            cat(paste(length(tif.files),"models to ensemble from for",sp,"\n"))
             mod2 <- raster::stack(tif.files)
             if(length(tif.files)==1){
                 ensemble.m <- mod2

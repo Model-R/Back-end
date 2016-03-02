@@ -17,7 +17,7 @@ final_layers/
 
 *~
 
-ENM/.RData
+*.RData
 
 ENM/.Rproj.user/6928E7F1/sdb/prop/125B864C
 
@@ -54,10 +54,8 @@ ENM/env/1Km_.eigenvariables.gri
 ENM/env/1Km_.eigenvariables.grd
 .Rproj.user
 
-ENM/data/registroslimpos.csv
 
 ENM/data/registrosnomesfinais.csv
 
 ENM/data/Atlantic_Domain_Ari_RevTaxon_Final.csv
 
-ENM/data/Atlantic_Domain_Ari_RevTaxon_Final.csv

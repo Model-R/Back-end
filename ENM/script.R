@@ -21,10 +21,10 @@ library("rgdal")
 # Loading spatial data
 predictors <-  stack(list.files("./env",pattern="1k",full.names = T)[1])
 # Cortando pela MataAtlantica:
-mascara <- readOGR(dsn="./data", layer="Bioma_MA1148")
-mascara <- rasterize(mascara, predictors[[1]], field=mascara@data$FID)
-mascara<-crop(mascara,crop)
-
+crop <- readOGR(dsn="./data", layer="Bioma_MA1148")
+mascara <- rasterize(crop, predictors[[1]], field=crop@data$FID)
+mascara <- crop(mascara,crop)
+rm(crop)
 # FLORA ----
 # Loading occorrences:
 occs <- read.csv("./data/registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))

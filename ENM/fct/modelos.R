@@ -31,7 +31,7 @@ dismo.mod <- function(sp,
 
   #Teste se pacotes estao instalados. Caso negativo, instala os pacotes e dependencias
   pacotes <- c('dismo','XML','raster','rgdal','maps','rgeos')
-  if (!pacotes %in% installed.packages()) install.packages(pacotes, dependencies = TRUE)
+ # if (!pacotes %in% installed.packages()) install.packages(pacotes, dependencies = TRUE)
   #Loading packages
   lapply(pacotes, require, character.only = TRUE)
 

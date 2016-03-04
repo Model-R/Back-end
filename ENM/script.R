@@ -16,13 +16,13 @@ library("XML")
 library("snowfall")
 #install.packages("rjava")
 library("rJava")
-library(rgdal)
+library("rgdal")
 
 # Loading spatial data
 predictors <-  stack(list.files("./env",pattern="1k",full.names = T)[1])
 # Cortando pela MataAtlantica:
 mascara <- readOGR(dsn="./data", layer="Bioma_MA1148")
-mascara<-rasterize(crop, predictors[[1]], field=crop@data$FID)
+mascara <- rasterize(mascara, predictors[[1]], field=mascara@data$FID)
 mascara<-crop(mascara,crop)
 
 # FLORA ----

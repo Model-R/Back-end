@@ -94,7 +94,7 @@ dismo.mod <- function(sp,
   back <- cbind(backgr,backvals)
   rbind_1 <- rbind(pres,back)
   sdmdata <- data.frame(cbind(group.all,pa,rbind_1))
-   rm(rbind_1);rm(pres);rm(back)
+   rm(rbind_1);rm(pres);rm(back); gc()
   write.table(sdmdata,file = paste0("./",output.folder,"/",sp,"/sdmdata.txt"))
 
 
@@ -204,7 +204,7 @@ dismo.mod <- function(sp,
           dev.off()
         }
       }
-  rm(bc);rm(bc_cont);rm(bc_bin);rm(bc_cut)
+  rm(bc);rm(bc_cont);rm(bc_bin);rm(bc_cut); gc()
     }
 
     if (Domain == T){
@@ -266,7 +266,7 @@ dismo.mod <- function(sp,
             rm(data2)
           }
         }
-  rm(do);rm(do_cont);rm(do_bin);rm(do_cut)
+  rm(do);rm(do_cont);rm(do_bin);rm(do_cut); gc()
       }
 
     if (maxent == T){
@@ -336,7 +336,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-       rm(mx);rm(mx_cont);rm(mx_bin);rm(mx_cut)
+       rm(mx);rm(mx_cont);rm(mx_bin);rm(mx_cut); gc()
     }
 
     if (Mahal == T){
@@ -404,7 +404,7 @@ dismo.mod <- function(sp,
           rm(data2)
         }
       }
-   rm(ma);rm(ma_cont);rm(ma_bin);rm(ma_cut)
+   rm(ma);rm(ma_cont);rm(ma_bin);rm(ma_cut); gc()
     }
 else cat("Mahalanobis distance did not run")
 }
@@ -463,8 +463,8 @@ else cat("Mahalanobis distance did not run")
                glm_proj <- crop(glm_proj , mask)
                glm_proj_bin <- mask(glm_proj_bin , mask)
                glm_proj_bin <- crop(glm_proj_bin , mask)
-               glm_proj_cut <- mask(glm_proj_cut , mask
-               glm_proj_cut <- crop(glm_proj_cut , mask
+               glm_proj_cut <- mask(glm_proj_cut , mask)
+               glm_proj_cut <- crop(glm_proj_cut , mask)
            }
           writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
           writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -472,7 +472,7 @@ else cat("Mahalanobis distance did not run")
           rm(data2)
         }
       }
-   rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut)
+   rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut); gc()
     }
 
     if (RF == T){
@@ -540,7 +540,7 @@ else cat("Mahalanobis distance did not run")
           rm(data2)
         }
       }
-   rm(rf);rm(rf_cont);rm(rf_bin);rm(rf_cut)
+   rm(rf);rm(rf_cont);rm(rf_bin);rm(rf_cut); gc()
     }
 
     if (SVM == T){
@@ -604,7 +604,7 @@ else cat("Mahalanobis distance did not run")
           rm(data2)
         }
       }
-   rm(svm);rm(svm_cont);rm(svm_bin);rm(svm_cut)
+   rm(svm);rm(svm_cont);rm(svm_bin);rm(svm_cut); gc()
     }
 
     if (SVM2 == T) {
@@ -664,7 +664,7 @@ else cat("Mahalanobis distance did not run")
           rm(data2)
         }
       }
-   rm(svm2);rm(svm2_cont);rm(svm2_bin);rm(svm2_cut)
+   rm(svm2);rm(svm2_cont);rm(svm2_bin);rm(svm2_cut); gc()
     }
 
     cat(paste("Saving the evaluation file...",sp,i,'\n'))

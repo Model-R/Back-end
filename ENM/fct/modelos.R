@@ -18,7 +18,7 @@ dismo.mod <- function(sp,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
                       #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                      mask = NULL,#
+                      mask = NULL,#Raster layer to mask predicted model
                       n.back = 500){
 
   if (file.exists(paste0("./",output.folder)) == FALSE) dir.create(paste0("./",output.folder))
@@ -74,6 +74,7 @@ dismo.mod <- function(sp,
   #Gerando pontos aleatorios no buffer
      set.seed(seed+2)
     backgr <- randomPoints(r_buffer, n.back)
+    rm(buffer);gc()
   }
 
   colnames(backgr) <- c('lon', 'lat')
@@ -157,7 +158,7 @@ dismo.mod <- function(sp,
       row.names(thbc) <- paste(sp,i,"BioClim")
       eval <- rbind(eval,thbc)
 
-      if (class(mask) == "RasterLayer"){
+      if (class(mask) == "SpatialPolygonsDataFrame"){
       bc_cont <- mask(bc_cont , mask)
       bc_cont <- crop(boc_cont, mask)
       bc_bin <- mask(bc_bin , mask)
@@ -185,7 +186,7 @@ dismo.mod <- function(sp,
           bc_proj_cut <- bc_proj_bin * bc_proj
           # Normaliza o modelo cut
           #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
-          if (class(mask) == "RasterLayer"){
+          if (class(mask) == "SpatialPolygonsDataFrame"){
               bc_proj <- mask(bc_proj , mask)
               bc_proj <- crop(bc_proj , mask)
               bc_proj_bin <- mask(bc_proj_bin , mask)
@@ -224,7 +225,7 @@ dismo.mod <- function(sp,
         row.names(thdo) <- paste(sp,i,"Domain")
         eval <- rbind(eval,thdo)
 
-        if (class(mask) == "RasterLayer"){
+        if (class(mask) == "SpatialPolygonsDataFrame"){
             do_cont <- mask(do_cont , mask)
             do_cont <- crop(do_cont , mask)
             do_bin <- mask(do_bin , mask)
@@ -252,7 +253,7 @@ dismo.mod <- function(sp,
             do_proj_cut <- do_proj_bin * do_proj
             # Normaliza o modelo cut
             #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
-            if (class(mask) == "RasterLayer"){
+            if (class(mask) == "SpatialPolygonsDataFrame"){
                 do_proj <- mask(do_proj , mask)
                 do_proj <- crop(do_proj , mask)
                 do_proj_bin <- mask(do_proj_bin , mask)
@@ -295,7 +296,7 @@ dismo.mod <- function(sp,
       thmx$partition <- i
       row.names(thmx) <- paste(sp,i,"maxent")
       eval <- rbind(eval,thmx)
-      if (class(mask) == "RasterLayer"){
+      if (class(mask) == "SpatialPolygonsDataFrame"){
           mx_cont <- mask(mx_cont , mask)
           mx_cont <- crop(mx_cont , mask)
           mx_bin <- mask(mx_bin , mask)
@@ -322,7 +323,7 @@ dismo.mod <- function(sp,
           mx_proj_cut <- mx_proj_bin * mx_proj
           # Normaliza o modelo cut
           #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
-          if (class(mask) == "RasterLayer"){
+          if (class(mask) == "SpatialPolygonsDataFrame"){
               mx_proj <- mask(mx_proj , mask)
               mx_proj <- crop(mx_proj , mask)
               mx_proj_bin <- mask(mx_proj_bin , mask)
@@ -362,7 +363,7 @@ dismo.mod <- function(sp,
       row.names(thma) <- paste(sp,i,"Mahal")
       eval <- rbind(eval,thma)
 
-      if (class(mask) == "RasterLayer"){
+      if (class(mask) == "SpatialPolygonsDataFrame"){
           ma_cont <- mask(ma_cont , mask)
           ma_cont <- crop(ma_cont , mask)
           ma_bin <- mask(ma_bin , mask)
@@ -390,7 +391,7 @@ dismo.mod <- function(sp,
           # Normaliza o modelo cut
           #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
 
-          if (class(mask) == "RasterLayer"){
+          if (class(mask) == "SpatialPolygonsDataFrame"){
               ma_proj <- mask(ma_proj , mask)
               ma_proj <- crop(ma_proj , mask)
               ma_proj_bin <- mask(ma_proj_bin , mask)
@@ -412,7 +413,7 @@ else cat("Mahalanobis distance did not run")
       cat(paste("GLM",'\n'))
       null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
       full.model <- glm(sdmdata_train$pa~.,data=envtrain,family="binomial")
-      glm<-step(object = null.model,scope = formula(full.model),direction = "both",trace=F)
+      glm <- step(object = null.model,scope = formula(full.model),direction = "both",trace=F)
       eglm <- evaluate(envtest_pre,envtest_back,model=glm,type="response")#####
       #eglm <- evaluate(pres_test,backg_test,glm,predictors,type="response")
       glm_TSS <- max(eglm@TPR + eglm@TNR)-1
@@ -430,7 +431,7 @@ else cat("Mahalanobis distance did not run")
       glm_cut <- glm_bin * glm_cont
       # Normaliza o modelo cut
       #glm_cut <- glm_cut/maxValue(glm_cut)
-      if (class(mask) == "RasterLayer"){
+      if (class(mask) == "SpatialPolygonsDataFrame"){
           glm_cont <- mask(glm_cont , mask)
           glm_cont <- crop(glm_cont , mask)
           glm_bin <- mask(glm_bin , mask)
@@ -458,7 +459,7 @@ else cat("Mahalanobis distance did not run")
           # Normaliza o modelo cut
           #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
 
-                     if (class(mask) == "RasterLayer"){
+                     if (class(mask) == "SpatialPolygonsDataFrame"){
                glm_proj <- mask(glm_proj , mask)
                glm_proj <- crop(glm_proj , mask)
                glm_proj_bin <- mask(glm_proj_bin , mask)
@@ -498,7 +499,7 @@ else cat("Mahalanobis distance did not run")
       rf_bin <- rf_cont>thresholdrf
       rf_cut <- rf_bin * rf_cont
       #rf1_cut <- rf1_cut/maxValue(rf1_cut)
-       if (class(mask) == "RasterLayer"){
+       if (class(mask) == "SpatialPolygonsDataFrame"){
            rf_cont <- mask(rf_cont , mask)
            rf_cont <- crop(rf_cont , mask)
            rf_bin <- mask(rf_bin , mask)
@@ -526,7 +527,7 @@ else cat("Mahalanobis distance did not run")
           rf_proj_cut <- rf_proj_bin * rf_proj
           # Normaliza o modelo cut
           #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
-                 if (class(mask) == "RasterLayer"){
+                 if (class(mask) == "SpatialPolygonsDataFrame"){
           rf_proj <- mask(rf_proj , mask)
           rf_proj <- crop(rf_proj , mask)
           rf_proj_bin <- mask(rf_proj_bin , mask)
@@ -565,7 +566,7 @@ else cat("Mahalanobis distance did not run")
       #TRANSFORMA 0 A 1
       svm_cont <- svm_cont/maxValue(svm_cont)
       svm_cut <- svm_cut/maxValue(svm_cut)
-             if (class(mask) == "RasterLayer"){
+             if (class(mask) == "SpatialPolygonsDataFrame"){
                  svm_cont <- mask(svm_cont , mask)
                  svm_cont <- crop(svm_cont , mask)
                  svm_bin <- mask(svm_bin , mask)
@@ -593,7 +594,7 @@ else cat("Mahalanobis distance did not run")
 
           # Normaliza o modelo cut
           #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
-                 if (class(mask) == "RasterLayer"){
+                 if (class(mask) == "SpatialPolygonsDataFrame"){
                     svm_proj <- svm_proj * mask
                     svm_proj_bin <- svm_proj_bin * mask
                     svm_proj_cut <- svm_proj_cut * mask
@@ -629,7 +630,7 @@ else cat("Mahalanobis distance did not run")
       #TRANSFORMA 0 A 1
       svm2_cont <- svm2_cont/maxValue(svm2_cont)
       svm2_cut <- svm2_cut/maxValue(svm2_cut)
-             if (class(mask) == "RasterLayer"){
+             if (class(mask) == "SpatialPolygonsDataFrame"){
                  svm2_cont <- svm2_cont * mask
                  svm2_bin <- svm2_bin * mask
                  svm2_cut <- svm2_cut * mask
@@ -653,7 +654,7 @@ else cat("Mahalanobis distance did not run")
           svm2_proj_cut <- svm2_proj_bin * svm2_proj
           # Normaliza o modelo cut
           #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
-                 if (class(mask) == "RasterLayer"){
+                 if (class(mask) == "SpatialPolygonsDataFrame"){
                      svm2_proj <- svm2_proj * mask
                      svm2_proj_bin <- svm2_proj_bin * mask
                      svm2_proj_cut <- svm2_proj_cut * mask

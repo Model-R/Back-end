@@ -128,7 +128,11 @@ names(registros)
  
  names.sp <- unique(table3$sp)
  length(names.sp)
- # write.csv(names.sp,"./data/FLORA_nameslimpos.csv")
+ 
+ occs_final <- occs[occs$sp %in% names.sp,]
+ dim(occs_final)
+ unique(occs_final$sp)
+ write.csv(occs_final,"./data/FLORA_occs_final.csv")
  
  #----
  # Mesmo procedimento para ANFIBIOS: ----
@@ -217,8 +221,11 @@ which(table3$per<.5)
 
 names.sp<-unique(table3$sp)
 length(names.sp)
-# Salvando os nomes limpos (sem spp c dist marginal)
-# write.csv(names.sp,"./data/ANFIBIOS_nameslimpos.csv")
+
+occs_final <- occs[occs$sp %in% names.sp,]
+dim(occs_final)
+write.csv(occs_final,"./data/ANFIBIOS_occs_final.csv")
+
 
 #----
 # Mesmo procedimento para AVES: ----
@@ -268,5 +275,6 @@ which(table2$per<.5)
 names.sp<-unique(table3$sp)
 length(names.sp)
 
-# Salvando os nomes limpos (sem spp c dist marginal)
-# write.csv(names.sp,"./data/AVES_nameslimpos.csv")
+occs_final <- occs[occs$sp %in% names.sp,]
+dim(occs_final)
+write.csv(occs_final,"./data/AVES_occs_final.csv")

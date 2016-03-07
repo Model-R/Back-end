@@ -18,33 +18,35 @@ library("snowfall")
 library("rJava")
 library("rgdal")
 
-# Loading spatial data
-predictors <-  stack(list.files("./env",pattern="1k",full.names = T)[1])
+# Loading environmental data, study area mask
+predictors <-  stack(list.files("./env",pattern="1K",full.names = T)[1])
 # Cortando pela MataAtlantica:
 crop <- readOGR(dsn="./data", layer="Bioma_MA1148")
 mascara <- rasterize(crop, predictors[[1]], field=crop@data$FID)
 mascara <- crop(mascara,crop)
-rm(crop)
+
 # FLORA ----
 # Loading occorrences:
-occs <- read.csv("./data/registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
+occs <- read.csv("./data/FLORA_occs_final.csv")
+head(occs)
 
-# Loading names to be modelled (after taxa and spacial cleaning) see: "./script.limpeza.registros.R"
-names.sp <- read.csv("./data/FLORA_nameslimpos.csv", col.names=c("x"))
-dim(names.sp)
+# Defining names to be modelled (after taxa and spacial cleaning) see: "./script.limpeza.registros.R"
+names.sp <- unique(occs$sp)
+length(names.sp)
 
 # set.seed(712)
-# N <- sample(1:dim(names.sp)[1],30)
-names.sp[N,]
-sort(names.sp[N,])
-#names.sp<-list.files(path='./FLORA_buffermax2/')
+# N <- sample(1:length(names.sp),length(names.sp))
+names.sp[N]
+names.sp[N][1:123] # Modelando con n igual a anfibios
+names.sp[N][124:151] # Modelando igual Aves
+names.sp[N][151:length(names.sp)] # Modelando tudo
 
 # MODELOS.R----
 source("./fct/modelos.R")
 args(dismo.mod)
 
 #iniciar snowfall
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/FLORA_170216_modelagem_buffer.log")
+sfInit(parallel=T,cpus=1, slaveOutfile="/home/felipe/FLORA_040316_modelagem.log")
 # 	#exporta variáveis e funções e pacotes
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
@@ -54,13 +56,13 @@ sfSource("./fct/modelos.R")
 
 #Com buffer ----
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
+sfClusterApplyLB(names.sp[N][1:123], 
                  dismo.mod, 
                  occs=occs,  
                  buffer = TRUE, buffer.type = "max",
                  seed=712, predictors = predictors, 
                  Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
-                 part=3, n.back=500, output.folder = "FLORA_buffermax2", mask=mascara, crop=crop)
+                 part=3, n.back=500, output.folder = "FLORA_buffermax_040316", mask=mascara)
 
 tFinal <- Sys.time()
 tFinal - tInicial
@@ -113,14 +115,14 @@ source('./fct/read.eval1.R')
 # finalModel ----
 source("./fct/final_model.R")
 args(finalModel)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/FLORA_finalModel2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/FLORA_040316_finalModel.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/final_model.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,],
+sfClusterApplyLB(names.sp[N][1:123],
                  finalModel,
                  input.folder="FLORA_buffermax2")
 tFinal <- Sys.time()
@@ -131,14 +133,14 @@ sfStop()
 # ENSEMBLE ----
 source("./fct/ensemble.R")
 args(ensemble)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/FLORA_ensemble2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/FLORA_040316_ensemble.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/ensemble.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,],
+sfClusterApplyLB(names.sp[N][1:123],
                  ensemble,
                  input.folder1="FLORA_buffermax2",occs=occs, consensus=TRUE, consensus.level=0.5)
 tFinal <- Sys.time()
@@ -189,20 +191,22 @@ lapply(names.sp[N,], rast.convert, projeto="FLORA_buffermax2", input.folder="ens
 # AVES
 #####
 # Loading occorrences:
-occs <- read.csv("./data/AVES_registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
+occs <- read.csv("./data/AVES_occs_final.csv",row.names=1,col.names=c("sp","lon","lat"))
 # Loading names to be modelled (after taxa and spacial cleaning) see: "./script.limpeza.registros.R"
-names.sp <- read.csv("./data/AVES_nameslimpos.csv", col.names = 'x')
-dim(names.sp)
+names.sp <- unique(occs$sp)
+length(names.sp)
 
 
 #selecionando aleatoriamente
 set.seed(712)
-N <- sample(1:dim(names.sp)[1],30)
-names.sp[N,]
-sort(names.sp[N,])
+N <- sample(1:length(names.sp),length(names.sp))
+names.sp[N]
+names.sp[N][1:123] # Modelando n igual a anfibios
+names.sp[N][123:length(names.sp)] # Modelando tudo
+
 #Iniciando SnowFall----
 #iniciar snowfall
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/AVES_saida_modelagem2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/AVES_040316_modelagem.log")
 
 #exporta variáveis e funções e pacotes
 sfExportAll()
@@ -213,13 +217,13 @@ sfSource("./fct/modelos.R")
 #AVES Com buffer ----
 args(dismo.mod)
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
+sfClusterApplyLB(names.sp[N][1:123], 
                  dismo.mod, 
                  occs=occs,  
                  buffer = TRUE, buffer.type = "max",
                  seed=712, predictors = predictors, 
                  Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
-                 part=3, n.back=500, output.folder = "AVES_buffermax2", mask=mascara, crop=crop)
+                 part=3, n.back=500, output.folder = "AVES_final", mask=mascara, crop=crop)
 tFinal <- Sys.time()
 tFinal - tInicial
 sfStop()
@@ -265,31 +269,31 @@ lapply(names.sp[N,][1:30], rasterCrop, input.folder="AVES_sem_buffer", mascara=m
 
 # finalModel ----
 args(finalModel)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/AVES_finalModel2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/AVES_040316_finalModel.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/final_model.R")
 
 tInicial <- Sys.time()
-lapply(sort(names.sp[N,]),
+lapply(sort(names.sp[N][1:123]),
        finalModel,
-       input.folder="AVES_buffermax2")
+       input.folder="AVES_final")
 tFinal <- Sys.time()
 tFinal - tInicial
 
 # ENSEMBLE ----
 args(ensemble)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_ensemble2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_040316_ensemble.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/ensemble.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(sort(names.sp[N,][1:30]),
+sfClusterApplyLB(sort(names.sp[N,][1:123]),
                  ensemble,
-                 input.folder1="AVES_buffermax2",occs=occs, consensus=TRUE, consensus.level=0.5)
+                 input.folder1="AVES_final",occs=occs, consensus=TRUE, consensus.level=0.5)
 
 tFinal <- Sys.time()
 tFinal - tInicial
@@ -336,19 +340,19 @@ lapply(names.sp[N,], rast.convert, projeto="AVES_buffermax2", input.folder="ense
 #####
 
 # Loading occorrences:
-occs <- read.csv("./data/ANFIBIOS_registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
+occs <- read.csv("./data/ANFIBIOS_occs_final.csv",row.names=1,col.names=c("sp","lon","lat"))
 # Loading names to be modelled (after taxa and spacial cleaning) see: "./script.limpeza.registros.R"
-names.sp <- read.csv("./data/ANFIBIOS_nameslimpos.csv", col.names = 'x')
-dim(names.sp)
+names.sp <- unique(occs$sp)
+length(names.sp)
 
 #selecionando aleatoriamente
 set.seed(712)
-N <- sample(1:dim(names.sp)[1],30)
-sort(names.sp[N,])
+N <- sample(1:length(names.sp),length(names.sp))
+names.sp[N]
 
 #Iniciando SnowFall----
 #iniciar snowfall
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_saida_modelagem2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_040316_modelagem.log")
 
 #exporta variáveis e funções e pacotes
 sfExportAll()
@@ -358,18 +362,18 @@ sfSource("./fct/modelos.R")
 
 #ANFIBIOS Com buffer ----
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
+sfClusterApplyLB(names.sp[N], 
                  dismo.mod, 
                  occs=occs,  
                  buffer = TRUE, buffer.type = "max",
                  seed=712, predictors = predictors, 
                  Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
-                 part=3, n.back=500, output.folder = "ANFIBIOS_buffermax2", mask=mascara, crop=crop)
+                 part=3, n.back=500, output.folder = "ANFIBIOS_final", mask=mascara, crop=crop)
 tFinal <- Sys.time()
 tFinal - tInicial
 sfStop()
 
-#Sem Buffer-----
+#Sem  Buffer-----
 sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_saida_sembuffer_modelagem.log")
 
 #exporta variáveis e funções e pacotes
@@ -377,7 +381,8 @@ sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/modelos.R")
-#ANFIBIOS Com buffer ----
+
+#ANFIBIOS sem buffer 
 tInicial <- Sys.time()
 sfClusterApplyLB(names.sp[N,], 
                  dismo.mod,
@@ -414,16 +419,16 @@ lapply(names.sp[N][1:30], rasterCrop, input.folder="ANFIBIOS_sem_buffer", mascar
 # finalModel ----
 source('./fct/final_model.R')
 args(finalModel)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_finalModel2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_040316_finalModel.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/final_model.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(sort(names.sp[N,][1:30]),
+sfClusterApplyLB(sort(names.sp[N]),
                  finalModel,
-                 input.folder="ANFIBIOS_buffermax2")
+                 input.folder="ANFIBIOS_final")
 
 tFinal <- Sys.time()
 tFinal - tInicial
@@ -431,16 +436,16 @@ sfStop()
 
 # ENSEMBLE ----
 args(ensemble)
-sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_ensemble2.log")
+sfInit(parallel=T,cpus=10, slaveOutfile="/home/felipe/ANFIBIOS_040316_ensemble.log")
 sfExportAll()
 sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/ensemble.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(sort(names.sp[N,][1:30]),
+sfClusterApplyLB(sort(names.sp[N]),
                  ensemble,
-                 input.folder1="ANFIBIOS_buffermax2",occs=occs, consensus=TRUE, consensus.level=0.5)
+                 input.folder1="ANFIBIOS_final",occs=occs, consensus=TRUE, consensus.level=0.5)
 
 tFinal <- Sys.time()
 tFinal - tInicial

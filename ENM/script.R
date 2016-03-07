@@ -21,9 +21,7 @@ library("rgdal")
 # Loading environmental data, study area mask
 predictors <-  stack(list.files("./env",pattern="1K",full.names = T)[1])
 # Cortando pela MataAtlantica:
-crop <- readOGR(dsn="./data", layer="Bioma_MA1148")
-mascara <- rasterize(crop, predictors[[1]], field=crop@data$FID)
-mascara <- crop(mascara,crop)
+mascara <- readOGR(dsn="./data", layer="Bioma_MA1148")
 
 # FLORA ----
 # Loading occorrences:

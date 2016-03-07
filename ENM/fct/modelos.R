@@ -18,7 +18,7 @@ dismo.mod <- function(sp,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
                       #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                      mask = NULL,#Raster layer to mask predicted model
+                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       n.back = 500){
 
   if (file.exists(paste0("./",output.folder)) == FALSE) dir.create(paste0("./",output.folder))

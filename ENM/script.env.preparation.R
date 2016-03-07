@@ -27,5 +27,5 @@ for (a in 1:length(filesToRename)){
 #source_url(eigenvariables.fct.R)
 source("./fct/eigenvariables.fct.R")
 library(raster)
-var<-stack(list.files(path='../1km/', pattern='.asc$', full.names = TRUE))
+var<-stack(list.files(path='./1km/', pattern='.asc$', full.names = TRUE))
 eigenvariables.fct(var, '1Km_', .95)

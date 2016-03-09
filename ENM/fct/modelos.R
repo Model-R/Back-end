@@ -1,3 +1,87 @@
+do_bioclim <- function(sp,
+                       occs = spp.filt,#complete occurrence table
+                       predictors = predictors,
+                       pres_train, #NEW
+                       pres_test, #NEW
+                       backg_test, #NEW
+                       i, #NEW
+                       e, #NEW
+                       buffer = TRUE,
+                       buffer.type = "max",#"mean"
+                       part = 3,
+                       seed = NULL,#for reproducibility purposes
+                       output.folder = "models",
+                       project.model = F,
+                       projections = NULL,
+                       projdata = NULL,#um vector con nombres
+                       mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                       n.back = 500){
+    cat(paste("Bioclim",'\n'))
+    bc <- bioclim (predictors, pres_train)
+    ebc <- evaluate(pres_test,backg_test,bc,predictors)
+    thresholdbc <- ebc@t[which.max(ebc@TPR + ebc@TNR)]
+    thbc <- threshold(ebc)
+    bc_TSS <- max(ebc@TPR + ebc@TNR)-1
+    
+    bc_cont <- predict(predictors, bc, progress='text')
+    bc_bin <- bc_cont > thresholdbc
+    bc_cut <- bc_cont * bc_bin
+    thbc$AUC <- ebc@auc
+    thbc$TSS <- bc_TSS
+    thbc$algoritmo <- "BioClim"
+    thbc$partition <- i
+    row.names(thbc) <- paste(sp,i,"BioClim")
+    eval <- rbind(e,thbc) #NEW
+    
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        bc_cont <- mask(bc_cont , mask)
+        bc_cont <- crop(boc_cont, mask)
+        bc_bin <- mask(bc_bin , mask)
+        bc_bin <- crop(bc_bin , mask)
+        bc_cut <- mask(bc_cut , mask)
+        bc_cut <- crop(bc_cut , mask)
+    }
+    writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
+    plot(bc_cont,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+    plot(bc_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+    plot(bc_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+    dev.off()
+    
+    if (project.model == T){
+        for (proj in projections){
+            #data <- list.files(paste0("./env/",proj),pattern=proj)
+            #data2 <- stack(data)
+            stopifnot(names(projdata) == names(predictors))
+            bc_proj <- predict(projdata,bc,progress='text')
+            bc_proj_bin <- bc_proj > thresholdbc
+            bc_proj_cut <- bc_proj_bin * bc_proj
+            # Normaliza o modelo cut
+            #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                bc_proj <- mask(bc_proj , mask)
+                bc_proj <- crop(bc_proj , mask)
+                bc_proj_bin <- mask(bc_proj_bin , mask)
+                bc_proj_bin <- crop(bc_proj_bin , mask)
+                bc_proj_cut <- mask(bc_proj_cut , mask)
+                bc_proj_cut <- crop(bc_proj_cut , mask)
+            }
+            writeRaster(x=bc_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+            png(filename=paste0("./",output.folder,"/",sp,"/",proj,"/Bioclim",sp,"_",i,"%03d.png"))
+            plot(bc_proj,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+            plot(bc_proj_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+            plot(bc_proj_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
+            dev.off()
+        }
+    }
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -139,74 +223,25 @@ dismo.mod <- function(sp,
     cat(paste("Modeling",sp,"Partition",i,'\n'))
     eval <- data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)
 
-    if (Bioclim == T){
-      cat(paste("Bioclim",'\n'))
-      bc <- bioclim (predictors, pres_train)
-      #ebc <- evaluate(pres_test, backgr, bc, predictors)
-      ebc <- evaluate(pres_test,backg_test,bc,predictors)
-      thresholdbc <- ebc@t[which.max(ebc@TPR + ebc@TNR)]
-      thbc <- threshold(ebc)
-      bc_TSS <- max(ebc@TPR + ebc@TNR)-1
-
-      bc_cont <- predict(predictors, bc, progress='text')
-      bc_bin <- bc_cont > thresholdbc
-      bc_cut <- bc_cont * bc_bin
-      thbc$AUC <- ebc@auc
-      thbc$TSS <- bc_TSS
-      thbc$algoritmo <- "BioClim"
-      thbc$partition <- i
-      row.names(thbc) <- paste(sp,i,"BioClim")
-      eval <- rbind(eval,thbc)
-
-      if (class(mask) == "SpatialPolygonsDataFrame"){
-      bc_cont <- mask(bc_cont , mask)
-      bc_cont <- crop(boc_cont, mask)
-      bc_bin <- mask(bc_bin , mask)
-      bc_bin <- crop(bc_bin , mask)
-      bc_cut <- mask(bc_cut , mask)
-      bc_cut <- crop(bc_cut , mask)
-      }
-      writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
-      plot(bc_cont,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-      plot(bc_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-      plot(bc_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          #data <- list.files(paste0("./env/",proj),pattern=proj)
-          #data2 <- stack(data)
-          stopifnot(names(projdata) == names(predictors))
-          bc_proj <- predict(projdata,bc,progress='text')
-          bc_proj_bin <- bc_proj > thresholdbc
-          bc_proj_cut <- bc_proj_bin * bc_proj
-          # Normaliza o modelo cut
-          #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
-          if (class(mask) == "SpatialPolygonsDataFrame"){
-              bc_proj <- mask(bc_proj , mask)
-              bc_proj <- crop(bc_proj , mask)
-              bc_proj_bin <- mask(bc_proj_bin , mask)
-              bc_proj_bin <- crop(bc_proj_bin , mask)
-              bc_proj_cut <- mask(bc_proj_cut , mask)
-              bc_proj_cut <- crop(bc_proj_cut , mask)
-          }
-          writeRaster(x=bc_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=bc_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=bc_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-          png(filename=paste0("./",output.folder,"/",sp,"/",proj,"/Bioclim",sp,"_",i,"%03d.png"))
-          plot(bc_proj,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-          plot(bc_proj_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-          plot(bc_proj_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
-          dev.off()
-        }
-      }
-  rm(bc);rm(bc_cont);rm(bc_bin);rm(bc_cut); gc()
-    }
+    if (Bioclim == T)
+        do_bioclim(sp = sp,
+                   occs = occs,
+                   predictors = predictors,
+                   pres_train = pres_train, #NEW
+                   pres_test = pres_test, #NEW
+                   backg_test = backg_test, #NEW
+                   i = i, #NEW
+                   e = eval, #NEW
+                   buffer = TRUE,
+                   buffer.type = "max",#"mean"
+                   part = 3,
+                   seed = NULL,#for reproducibility purposes
+                   output.folder = output.folder,
+                   project.model = F,
+                   projections = NULL,
+                   projdata = NULL,#um vector con nombres
+                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   n.back = 500)
 
     if (Domain == T){
         cat(paste("Domain",'\n'))

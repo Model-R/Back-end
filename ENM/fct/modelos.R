@@ -82,6 +82,91 @@ do_bioclim <- function(sp,
     }
 }
 
+do_randomForest <- function(sp,
+                            occs = spp.filt,#complete occurrence table
+                            predictors = predictors,
+                            sdmdata_train, #NEW
+                            envtest_pre, #NEW
+                            envtest_back, #NEW
+                            i, #NEW
+                            e, #NEW
+                            envtrain, #NEW
+                            buffer = TRUE,
+                            buffer.type = "max",#"mean"
+                            part = 3,
+                            seed = NULL,#for reproducibility purposes
+                            output.folder = "models",
+                            project.model = F,
+                            projections = NULL,
+                            projdata = NULL,#um vector con nombres
+                            #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                            mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                            n.back = 500){
+    library(randomForest)
+    cat(paste("Random Forests",'\n'))
+    #rf1 <- tuneRF(x=envtrain,y=sdmdata_train$pa,stepFactor = 0.5)
+    rf <- randomForest (sdmdata_train$pa~.,data=envtrain)
+    #rf <- randomForest (x =envtrain ,y=factor(sdmdata_train$pa),xtest=envtest,ytest = factor(sdmdata_teste$pa))#fazendo teste interno a funcao evaluate nao serve :(
+    
+    erf <- evaluate(envtest_pre,envtest_back,rf)
+    rf_TSS <- max(erf@TPR + erf@TNR)-1
+    
+    thresholdrf <- erf@t[which.max(erf@TPR + erf@TNR)]
+    thrf <- threshold(erf)
+    thrf$AUC <- erf@auc
+    thrf$TSS <- rf_TSS#raro
+    thrf$algoritmo <- "rf"
+    thrf$partition <- i
+    row.names(thrf) <- paste(sp,i,"rf")
+    eval <- rbind(e,thrf) #NEW
+    
+    rf_cont <- predict(predictors,rf,progress='text',type="response")
+    rf_bin <- rf_cont>thresholdrf
+    rf_cut <- rf_bin * rf_cont
+    #rf1_cut <- rf1_cut/maxValue(rf1_cut)
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        rf_cont <- mask(rf_cont , mask)
+        rf_cont <- crop(rf_cont , mask)
+        rf_bin <- mask(rf_bin , mask)
+        rf_bin <- mask(rf_bin , mask)
+        rf_cut <- mask(rf_cut , mask)
+        rf_cut <- crop(rf_cut , mask)
+    }
+    writeRaster(x=rf_cont,filename=paste0("./",output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_bin,filename=paste0("./",output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_cut,filename=paste0("./",output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/rf",sp,"_",i,"%03d.png"))
+    plot(rf_cont,main=paste("RF raw","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
+    plot(rf_bin,main=paste("RF P/A","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
+    plot(rf_cut,main=paste("RF cut","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
+    dev.off()
+    
+    
+    if (project.model == T){
+        for (proj in projections){
+            data <- list.files(paste0("./env/",proj),pattern=proj)
+            data2 <- stack(data)
+            rf_proj <- predict(data2,rf,progress='text')
+            rf_proj_bin <- rf_proj > thresholdrf
+            rf_proj_cut <- rf_proj_bin * rf_proj
+            # Normaliza o modelo cut
+            #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                rf_proj <- mask(rf_proj , mask)
+                rf_proj <- crop(rf_proj , mask)
+                rf_proj_bin <- mask(rf_proj_bin , mask)
+                rf_proj_bin <- crop(rf_proj_bin , mask)
+                rf_proj_cut <- mask(rf_proj_cut , mask)
+                rf_proj_cut <- crop(rf_proj_cut , mask)
+            }
+            writeRaster(x=rf_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+        }
+    }
+}
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -511,137 +596,28 @@ else cat("Mahalanobis distance did not run")
    rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut); gc()
     }
 
-    if (RF == T){
-      library(randomForest)
-      cat(paste("Random Forests",'\n'))
-      #rf1 <- tuneRF(x=envtrain,y=sdmdata_train$pa,stepFactor = 0.5)
-      rf <- randomForest (sdmdata_train$pa~.,data=envtrain)
-      #rf <- randomForest (x =envtrain ,y=factor(sdmdata_train$pa),xtest=envtest,ytest = factor(sdmdata_teste$pa))#fazendo teste interno a funcao evaluate nao serve :(
+    if (RF == T)
+        do_randomForest(sp,
+                        occs = spp.filt,#complete occurrence table
+                        predictors = predictors,
+                        sdmdata_train = sdmdata_train, #NEW
+                        envtest_pre = envtest_pre, #NEW
+                        envtest_back = envtest_back, #NEW
+                        i = i, #NEW
+                        e = eval, #NEW
+                        envtrain = envtrain, #NEW
+                        buffer = TRUE,
+                        buffer.type = "max",#"mean"
+                        part = 3,
+                        seed = NULL,#for reproducibility purposes
+                        output.folder = output.folder,
+                        project.model = F,
+                        projections = NULL,
+                        projdata = NULL,#um vector con nombres
+                        #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                        mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                        n.back = 500)
 
-      erf <- evaluate(envtest_pre,envtest_back,rf)
-      rf_TSS <- max(erf@TPR + erf@TNR)-1
-
-      thresholdrf <- erf@t[which.max(erf@TPR + erf@TNR)]
-      thrf <- threshold(erf)
-      thrf$AUC <- erf@auc
-      thrf$TSS <- rf_TSS#raro
-      thrf$algoritmo <- "rf"
-      thrf$partition <- i
-      row.names(thrf) <- paste(sp,i,"rf")
-      eval <- rbind(eval,thrf)
-
-      rf_cont <- predict(predictors,rf,progress='text',type="response")
-      rf_bin <- rf_cont>thresholdrf
-      rf_cut <- rf_bin * rf_cont
-      #rf1_cut <- rf1_cut/maxValue(rf1_cut)
-       if (class(mask) == "SpatialPolygonsDataFrame"){
-           rf_cont <- mask(rf_cont , mask)
-           rf_cont <- crop(rf_cont , mask)
-           rf_bin <- mask(rf_bin , mask)
-           rf_bin <- mask(rf_bin , mask)
-           rf_cut <- mask(rf_cut , mask)
-           rf_cut <- crop(rf_cut , mask)
-       }
-      writeRaster(x=rf_cont,filename=paste0("./",output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=rf_bin,filename=paste0("./",output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=rf_cut,filename=paste0("./",output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/rf",sp,"_",i,"%03d.png"))
-      plot(rf_cont,main=paste("RF raw","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
-      plot(rf_bin,main=paste("RF P/A","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
-      plot(rf_cut,main=paste("RF cut","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
-      dev.off()
-
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          rf_proj <- predict(data2,rf,progress='text')
-          rf_proj_bin <- rf_proj > thresholdrf
-          rf_proj_cut <- rf_proj_bin * rf_proj
-          # Normaliza o modelo cut
-          #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
-                 if (class(mask) == "SpatialPolygonsDataFrame"){
-          rf_proj <- mask(rf_proj , mask)
-          rf_proj <- crop(rf_proj , mask)
-          rf_proj_bin <- mask(rf_proj_bin , mask)
-          rf_proj_bin <- crop(rf_proj_bin , mask)
-          rf_proj_cut <- mask(rf_proj_cut , mask)
-          rf_proj_cut <- crop(rf_proj_cut , mask)
-                 }
-          writeRaster(x=rf_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=rf_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=rf_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-   rm(rf);rm(rf_cont);rm(rf_bin);rm(rf_cut); gc()
-    }
-
-    if (SVM == T){
-      cat(paste("SVM",'\n'))
-      library(kernlab)
-      svm <- ksvm(sdmdata_train$pa~.,data=envtrain,cross=part)##svm deve ser com a variável resposta binária ou contínua, eu acho que binária
-      esvm <- evaluate(envtest_pre,envtest_back,svm)
-      #esvm <- evaluate(pres_test,backg_test,model = svm,x = predictors)
-      svm_TSS <- max(esvm@TPR + esvm@TNR)-1
-      thresholdsvm <- esvm@t[which.max(esvm@TPR + esvm@TNR)]
-      thsvm <- threshold (esvm)
-      thsvm$AUC <- esvm@auc
-      thsvm$TSS <- svm_TSS
-      thsvm$algoritmo <- "svm"
-      thsvm$partition <- i
-      row.names(thsvm) <- paste(sp,i,"svm")
-      eval <- rbind(eval,thsvm)
-      svm_cont <- predict(predictors,svm,progress='text')
-      svm_bin <- svm_cont>thresholdsvm
-      svm_cut <- svm_bin * svm_cont
-
-      #TRANSFORMA 0 A 1
-      svm_cont <- svm_cont/maxValue(svm_cont)
-      svm_cut <- svm_cut/maxValue(svm_cut)
-             if (class(mask) == "SpatialPolygonsDataFrame"){
-                 svm_cont <- mask(svm_cont , mask)
-                 svm_cont <- crop(svm_cont , mask)
-                 svm_bin <- mask(svm_bin , mask)
-                 svm_bin <- crop(svm_bin , mask)
-                 svm_cut <- svm_cut * mask
-             }
-
-      writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=svm_bin,filename=paste0("./",output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=svm_cut,filename=paste0("./",output.folder,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/svm",sp,"_",i,"%03d.png"))
-      plot(svm_cont,main=paste("SVM raw","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
-      plot(svm_bin,main=paste("SVM P/A","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
-      plot(svm_cut,main=paste("SVM cut","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          svm_proj <- predict(data2,svm,progress='text')
-          svm_proj_bin <- svm_proj > thresholdsvm
-          svm_proj_cut <- svm_proj_bin * svm_proj
-
-          # Normaliza o modelo cut
-          #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
-                 if (class(mask) == "SpatialPolygonsDataFrame"){
-                    svm_proj <- svm_proj * mask
-                    svm_proj_bin <- svm_proj_bin * mask
-                    svm_proj_cut <- svm_proj_cut * mask
-                 }
-          writeRaster(x=svm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=svm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=svm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-   rm(svm);rm(svm_cont);rm(svm_bin);rm(svm_cut); gc()
-    }
 
     if (SVM2 == T) {
         cat(paste("SVM2",'\n'))

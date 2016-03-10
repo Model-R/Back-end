@@ -103,14 +103,14 @@ dismo.mod <- function(sp,
   for (i in unique(group)){
     cat(paste(sp,"partition number",i,'\n'))
     pres_train <- coord[group != i, ]
-    if(n == 1)pres_train <- coord[group == i,]
+    if (n == 1) pres_train <- coord[group == i, ]
     pres_test  <-  coord[group  ==  i, ]
 
-    backg_train <- backgr[bg.grp != i,]#not used?
-    backg_test <- backgr[bg.grp == i,]#new
+    backg_train <- backgr[bg.grp != i, ]#not used?
+    backg_test <- backgr[bg.grp == i, ]#new
 
-    sdmdata_train <- subset(sdmdata,group!=i)#new
-    sdmdata_test <- subset(sdmdata,group == i)#new
+    sdmdata_train <- subset(sdmdata, group != i)#new
+    sdmdata_test <- subset(sdmdata, group == i)#new
 
     envtrain <- subset(sdmdata_train,select= c(-group,-lon,-lat))#new
     envtest <- subset(sdmdata_test,select=c(-group,-lon,-lat))
@@ -160,7 +160,7 @@ dismo.mod <- function(sp,
 
       if (class(mask) == "SpatialPolygonsDataFrame"){
       bc_cont <- mask(bc_cont , mask)
-      bc_cont <- crop(boc_cont, mask)
+      bc_cont <- crop(bc_cont, mask)
       bc_bin <- mask(bc_bin , mask)
       bc_bin <- crop(bc_bin , mask)
       bc_cut <- mask(bc_cut , mask)
@@ -503,7 +503,7 @@ else cat("Mahalanobis distance did not run")
            rf_cont <- mask(rf_cont , mask)
            rf_cont <- crop(rf_cont , mask)
            rf_bin <- mask(rf_bin , mask)
-           rf_bin <- mask(rf_bin , mask)
+           rf_bin <- crop(rf_bin , mask)
            rf_cut <- mask(rf_cut , mask)
            rf_cut <- crop(rf_cut , mask)
        }
@@ -571,7 +571,8 @@ else cat("Mahalanobis distance did not run")
                  svm_cont <- crop(svm_cont , mask)
                  svm_bin <- mask(svm_bin , mask)
                  svm_bin <- crop(svm_bin , mask)
-                 svm_cut <- svm_cut * mask
+                 svm_cut <- mask(svm_cut , mask)
+                 svm_cut <- crop(svm_cut , mask)
              }
 
       writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")

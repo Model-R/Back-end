@@ -336,6 +336,91 @@ do_maxent <- function(sp,
     }
 }
 
+do_GLM <- function(sp,
+                   occs = spp.filt,#complete occurrence table
+                   predictors = predictors,
+                   sdmdata_train, #NEW
+                   envtest_pre, #NEW
+                   envtest_back, #NEW
+                   i, #NEW
+                   e, #NEW
+                   envtrain, #NEW
+                   buffer = TRUE,
+                   buffer.type = "max",#"mean"
+                   part = 3,
+                   seed = NULL,#for reproducibility purposes
+                   output.folder = "models",
+                   project.model = F,
+                   projections = NULL,
+                   projdata = NULL,#um vector con nombres
+                   #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   n.back = 500){##
+    cat(paste("GLM",'\n'))
+    null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
+    full.model <- glm(sdmdata_train$pa~.,data=envtrain,family="binomial")
+    glm <- step(object = null.model,scope = formula(full.model),direction = "both",trace=F)
+    eglm <- evaluate(envtest_pre,envtest_back,model=glm,type="response")#####
+    #eglm <- evaluate(pres_test,backg_test,glm,predictors,type="response")
+    glm_TSS <- max(eglm@TPR + eglm@TNR)-1
+    thresholdglm <- eglm@t[which.max(eglm@TPR + eglm@TNR)]
+    thglm <- threshold (eglm)
+    thglm$AUC <- eglm@auc
+    thglm$TSS <- glm_TSS
+    thglm$algoritmo <- "glm"
+    thglm$partition <- i
+    row.names(thglm) <- paste(sp,i,"glm")
+    eval <- rbind(e,thglm) #NEW
+    
+    glm_cont <- predict(predictors,glm,progress='text',type="response")
+    glm_bin <- glm_cont>thresholdglm
+    glm_cut <- glm_bin * glm_cont
+    # Normaliza o modelo cut
+    #glm_cut <- glm_cut/maxValue(glm_cut)
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        glm_cont <- mask(glm_cont , mask)
+        glm_cont <- crop(glm_cont , mask)
+        glm_bin <- mask(glm_bin , mask)
+        glm_bin <- crop(glm_bin , mask)
+        glm_cut <- mask(glm_cut , mask)
+        glm_cut <- crop(glm_cut , mask)
+    }
+    writeRaster(x=glm_cont,filename=paste0("./",output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_bin,filename=paste0("./",output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_cut,filename=paste0("./",output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/glm",sp,"_",i,"%03d.png"))
+    plot(glm_cont,main=paste("GLM raw","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
+    plot(glm_bin,main=paste("GLM P/A","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
+    plot(glm_cut,main=paste("GLM cut","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
+    dev.off()
+    
+    if (project.model == T){
+        for (proj in projections){
+            data <- list.files(paste0("./env/",proj),pattern=proj)
+            data2 <- stack(data)
+            glm_proj <- predict(data2,glm,progress='text')
+            glm_proj_bin <- glm_proj > thresholdglm
+            glm_proj_cut <- glm_proj_bin * glm_proj
+            # Normaliza o modelo cut
+            #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
+            
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                glm_proj <- mask(glm_proj , mask)
+                glm_proj <- crop(glm_proj , mask)
+                glm_proj_bin <- mask(glm_proj_bin , mask)
+                glm_proj_bin <- crop(glm_proj_bin , mask)
+                glm_proj_cut <- mask(glm_proj_cut , mask)
+                glm_proj_cut <- crop(glm_proj_cut , mask)
+            }
+            writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+        }
+    }
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -648,72 +733,27 @@ dismo.mod <- function(sp,
     }
 else cat("Mahalanobis distance did not run")
 }
-    if (GLM == T){##
-      cat(paste("GLM",'\n'))
-      null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
-      full.model <- glm(sdmdata_train$pa~.,data=envtrain,family="binomial")
-      glm <- step(object = null.model,scope = formula(full.model),direction = "both",trace=F)
-      eglm <- evaluate(envtest_pre,envtest_back,model=glm,type="response")#####
-      #eglm <- evaluate(pres_test,backg_test,glm,predictors,type="response")
-      glm_TSS <- max(eglm@TPR + eglm@TNR)-1
-      thresholdglm <- eglm@t[which.max(eglm@TPR + eglm@TNR)]
-      thglm <- threshold (eglm)
-      thglm$AUC <- eglm@auc
-      thglm$TSS <- glm_TSS
-      thglm$algoritmo <- "glm"
-      thglm$partition <- i
-      row.names(thglm) <- paste(sp,i,"glm")
-      eval <- rbind(eval,thglm)
-
-      glm_cont <- predict(predictors,glm,progress='text',type="response")
-      glm_bin <- glm_cont>thresholdglm
-      glm_cut <- glm_bin * glm_cont
-      # Normaliza o modelo cut
-      #glm_cut <- glm_cut/maxValue(glm_cut)
-      if (class(mask) == "SpatialPolygonsDataFrame"){
-          glm_cont <- mask(glm_cont , mask)
-          glm_cont <- crop(glm_cont , mask)
-          glm_bin <- mask(glm_bin , mask)
-          glm_bin <- crop(glm_bin , mask)
-          glm_cut <- mask(glm_cut , mask)
-          glm_cut <- crop(glm_cut , mask)
-      }
-      writeRaster(x=glm_cont,filename=paste0("./",output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=glm_bin,filename=paste0("./",output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=glm_cut,filename=paste0("./",output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/glm",sp,"_",i,"%03d.png"))
-      plot(glm_cont,main=paste("GLM raw","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
-      plot(glm_bin,main=paste("GLM P/A","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
-      plot(glm_cut,main=paste("GLM cut","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          glm_proj <- predict(data2,glm,progress='text')
-          glm_proj_bin <- glm_proj > thresholdglm
-          glm_proj_cut <- glm_proj_bin * glm_proj
-          # Normaliza o modelo cut
-          #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
-
-                     if (class(mask) == "SpatialPolygonsDataFrame"){
-               glm_proj <- mask(glm_proj , mask)
-               glm_proj <- crop(glm_proj , mask)
-               glm_proj_bin <- mask(glm_proj_bin , mask)
-               glm_proj_bin <- crop(glm_proj_bin , mask)
-               glm_proj_cut <- mask(glm_proj_cut , mask)
-               glm_proj_cut <- crop(glm_proj_cut , mask)
-           }
-          writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=glm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-   rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut); gc()
-    }
+    if (GLM == T)
+        do_GLM (sp,
+                occs = spp.filt,#complete occurrence table
+                predictors = predictors,
+                sdmdata_train = sdmdata_train, #NEW
+                envtest_pre = envtest_pre, #NEW
+                envtest_back = envtest_back, #NEW
+                i = i, #NEW
+                e = eval, #NEW
+                envtrain = envtrain, #NEW
+                buffer = TRUE,
+                buffer.type = "max",#"mean"
+                part = 3,
+                seed = NULL,#for reproducibility purposes
+                output.folder = output.folder,
+                project.model = F,
+                projections = NULL,
+                projdata = NULL,#um vector con nombres
+                #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                n.back = 500)
 
     if (RF == T)
         do_randomForest(sp,

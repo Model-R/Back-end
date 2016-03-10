@@ -585,6 +585,84 @@ do_mahal <- function(sp,
     else cat("Mahalanobis distance did not run")
 }
 
+do_SVM2 <- function(sp,
+                    occs = spp.filt,#complete occurrence table
+                    predictors = predictors,
+                    sdmdata_train, #NEW
+                    envtest_pre, #NEW
+                    envtest_back, #NEW
+                    i, #NEW
+                    e, #NEW
+                    envtrain, #NEW
+                    buffer = TRUE,
+                    buffer.type = "max",#"mean"
+                    part = 3,
+                    seed = NULL,#for reproducibility purposes
+                    output.folder = "models",
+                    project.model = F,
+                    projections = NULL,
+                    projdata = NULL,#um vector con nombres
+                    #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                    mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                    n.back = 500){
+    cat(paste("SVM2",'\n'))
+    library(e1071)
+    svm2 <- best.tune("svm",envtrain,sdmdata_train$pa,data=envtrain)##svm deve ser com a variável resposta binária ou contínua, eu acho que binária
+    esvm2 <- evaluate(envtest_pre,envtest_back,svm2)
+    #esvm <- evaluate(pres_test,backg_test,model = svm,x = predictors)
+    svm2_TSS <- max(esvm2@TPR + esvm2@TNR)-1
+    thresholdsvm2 <- esvm2@t[which.max(esvm2@TPR + esvm2@TNR)]
+    thsvm2 <- threshold (esvm2)
+    thsvm2$AUC <- esvm2@auc
+    thsvm2$TSS <- svm2_TSS
+    thsvm2$algoritmo <- "svm2"
+    thsvm2$partition <- i
+    row.names(thsvm2) <- paste(sp,i,"svm2")
+    eval <- rbind(e,thsvm2) #NEW
+    svm2_cont <- predict(predictors,svm2,progress='text')
+    svm2_bin <- svm2_cont>thresholdsvm2
+    svm2_cut <- svm2_bin * svm2_cont
+    
+    #TRANSFORMA 0 A 1
+    svm2_cont <- svm2_cont/maxValue(svm2_cont)
+    svm2_cut <- svm2_cut/maxValue(svm2_cut)
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        svm2_cont <- svm2_cont * mask
+        svm2_bin <- svm2_bin * mask
+        svm2_cut <- svm2_cut * mask
+    }
+    writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
+    plot(svm2_cont,main=paste("SVM2 raw","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
+    plot(svm2_bin,main=paste("SVM2 P/A","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
+    plot(svm2_cut,main=paste("SVM2 cut","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
+    dev.off()
+    
+    if (project.model == T){
+        for (proj in projections){
+            data <- list.files(paste0("./env/",proj),pattern=proj)
+            data2 <- stack(data)
+            svm2_proj <- predict(data2,svm2,progress='text')
+            svm2_proj_bin <- svm2_proj > thresholdsvm2
+            svm2_proj_cut <- svm2_proj_bin * svm2_proj
+            # Normaliza o modelo cut
+            #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                svm2_proj <- svm2_proj * mask
+                svm2_proj_bin <- svm2_proj_bin * mask
+                svm2_proj_cut <- svm2_proj_cut * mask
+            }
+            writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+        }
+    }
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -872,65 +950,27 @@ dismo.mod <- function(sp,
                 mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                 n.back = 500)
 
-    if (SVM2 == T) {
-        cat(paste("SVM2",'\n'))
-      library(e1071)
-      svm2 <- best.tune("svm",envtrain,sdmdata_train$pa,data=envtrain)##svm deve ser com a variável resposta binária ou contínua, eu acho que binária
-      esvm2 <- evaluate(envtest_pre,envtest_back,svm2)
-      #esvm <- evaluate(pres_test,backg_test,model = svm,x = predictors)
-      svm2_TSS <- max(esvm2@TPR + esvm2@TNR)-1
-      thresholdsvm2 <- esvm2@t[which.max(esvm2@TPR + esvm2@TNR)]
-      thsvm2 <- threshold (esvm2)
-      thsvm2$AUC <- esvm2@auc
-      thsvm2$TSS <- svm2_TSS
-      thsvm2$algoritmo <- "svm2"
-      thsvm2$partition <- i
-      row.names(thsvm2) <- paste(sp,i,"svm2")
-      eval <- rbind(eval,thsvm2)
-      svm2_cont <- predict(predictors,svm2,progress='text')
-      svm2_bin <- svm2_cont>thresholdsvm2
-      svm2_cut <- svm2_bin * svm2_cont
-
-      #TRANSFORMA 0 A 1
-      svm2_cont <- svm2_cont/maxValue(svm2_cont)
-      svm2_cut <- svm2_cut/maxValue(svm2_cut)
-             if (class(mask) == "SpatialPolygonsDataFrame"){
-                 svm2_cont <- svm2_cont * mask
-                 svm2_bin <- svm2_bin * mask
-                 svm2_cut <- svm2_cut * mask
-             }
-      writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
-      plot(svm2_cont,main=paste("SVM2 raw","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
-      plot(svm2_bin,main=paste("SVM2 P/A","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
-      plot(svm2_cut,main=paste("SVM2 cut","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          svm2_proj <- predict(data2,svm2,progress='text')
-          svm2_proj_bin <- svm2_proj > thresholdsvm2
-          svm2_proj_cut <- svm2_proj_bin * svm2_proj
-          # Normaliza o modelo cut
-          #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
-                 if (class(mask) == "SpatialPolygonsDataFrame"){
-                     svm2_proj <- svm2_proj * mask
-                     svm2_proj_bin <- svm2_proj_bin * mask
-                     svm2_proj_cut <- svm2_proj_cut * mask
-                 }
-          writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=svm2_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-   rm(svm2);rm(svm2_cont);rm(svm2_bin);rm(svm2_cut); gc()
-    }
+    if (SVM2 == T)
+        do_SVM2(sp,
+                occs = spp.filt,#complete occurrence table
+                predictors = predictors,
+                sdmdata_train = sdmdata_train, #NEW
+                envtest_pre = envtest_pre, #NEW
+                envtest_back = envtest_back, #NEW
+                i = i, #NEW
+                e = eval, #NEW
+                envtrain = envtrain, #NEW
+                buffer = TRUE,
+                buffer.type = "max",#"mean"
+                part = 3,
+                seed = NULL,#for reproducibility purposes
+                output.folder = output.folder,
+                project.model = F,
+                projections = NULL,
+                projdata = NULL,#um vector con nombres
+                #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
+                mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                n.back = 500)
 
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
     write.table(eval[-1,],file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))

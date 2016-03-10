@@ -421,6 +421,84 @@ do_GLM <- function(sp,
     }
 }
 
+do_domain <- function(sp,
+                      occs = spp.filt,#complete occurrence table
+                      predictors = predictors,
+                      pres_train, #NEW
+                      pres_test, #NEW
+                      backg_test, #NEW
+                      i, #NEW
+                      e, #NEW
+                      buffer = TRUE,
+                      buffer.type = "max",#"mean"
+                      part = 3,
+                      seed = NULL,#for reproducibility purposes
+                      output.folder = "models",
+                      project.model = F,
+                      projections = NULL,
+                      projdata = NULL,#um vector con nombres
+                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      n.back = 500){
+    cat(paste("Domain",'\n'))
+    do <- domain (predictors, pres_train)
+    edo <- evaluate(pres_test,backg_test,do,predictors)
+    thresholddo <- edo@t[which.max(edo@TPR + edo@TNR)]
+    thdo <- threshold(edo)
+    do_TSS <- max(edo@TPR + edo@TNR)-1
+    do_cont <- predict(predictors, do, progress='text')
+    do_bin <- do_cont > thresholddo
+    do_cut <- do_cont * do_bin
+    thdo$AUC <- edo@auc
+    thdo$TSS <- do_TSS
+    thdo$algoritmo <- "Domain"
+    thdo$partition <- i
+    row.names(thdo) <- paste(sp,i,"Domain")
+    eval <- rbind(e,thdo) #NEW
+    
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        do_cont <- mask(do_cont , mask)
+        do_cont <- crop(do_cont , mask)
+        do_bin <- mask(do_bin , mask)
+        do_bin <- crop(do_bin , mask)
+        do_cut <- mask(do_cut , mask)
+        do_cut <- crop(do_cut , mask)
+    }
+    writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
+    plot(do_cont,main=paste("Domain raw","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
+    plot(do_bin,main=paste("Domain P/A","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
+    plot(do_cut,main=paste("Domain cut","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
+    dev.off()
+    
+    
+    if (project.model == T){
+        for (proj in projections){
+            data <- list.files(paste0("./env/",proj),pattern=proj)
+            data2 <- stack(data)
+            do_proj <- predict(data2,do,progress='text')
+            do_proj_bin <- do_proj > thresholddo
+            do_proj_cut <- do_proj_bin * do_proj
+            # Normaliza o modelo cut
+            #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                do_proj <- mask(do_proj , mask)
+                do_proj <- crop(do_proj , mask)
+                do_proj_bin <- mask(do_proj_bin , mask)
+                do_proj_bin <- crop(do_proj_bin , mask)
+                do_proj_cut <- mask(do_proj_cut , mask)
+                do_proj_cut <- crop(do_proj_cut , mask)
+            }
+            writeRaster(x=do_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+        }
+    }
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -582,67 +660,25 @@ dismo.mod <- function(sp,
                    mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                    n.back = 500)
 
-    if (Domain == T){
-        cat(paste("Domain",'\n'))
-        do <- domain (predictors, pres_train)
-        edo <- evaluate(pres_test,backg_test,do,predictors)
-        thresholddo <- edo@t[which.max(edo@TPR + edo@TNR)]
-        thdo <- threshold(edo)
-        do_TSS <- max(edo@TPR + edo@TNR)-1
-        do_cont <- predict(predictors, do, progress='text')
-        do_bin <- do_cont > thresholddo
-        do_cut <- do_cont * do_bin
-        thdo$AUC <- edo@auc
-        thdo$TSS <- do_TSS
-        thdo$algoritmo <- "Domain"
-        thdo$partition <- i
-        row.names(thdo) <- paste(sp,i,"Domain")
-        eval <- rbind(eval,thdo)
-
-        if (class(mask) == "SpatialPolygonsDataFrame"){
-            do_cont <- mask(do_cont , mask)
-            do_cont <- crop(do_cont , mask)
-            do_bin <- mask(do_bin , mask)
-            do_bin <- crop(do_bin , mask)
-            do_cut <- mask(do_cut , mask)
-            do_cut <- crop(do_cut , mask)
-        }
-        writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-        png(filename=paste0("./",output.folder,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
-        plot(do_cont,main=paste("Domain raw","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
-        plot(do_bin,main=paste("Domain P/A","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
-        plot(do_cut,main=paste("Domain cut","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
-        dev.off()
-
-
-        if (project.model == T){
-          for (proj in projections){
-            data <- list.files(paste0("./env/",proj),pattern=proj)
-            data2 <- stack(data)
-            do_proj <- predict(data2,do,progress='text')
-            do_proj_bin <- do_proj > thresholddo
-            do_proj_cut <- do_proj_bin * do_proj
-            # Normaliza o modelo cut
-            #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
-            if (class(mask) == "SpatialPolygonsDataFrame"){
-                do_proj <- mask(do_proj , mask)
-                do_proj <- crop(do_proj , mask)
-                do_proj_bin <- mask(do_proj_bin , mask)
-                do_proj_bin <- crop(do_proj_bin , mask)
-                do_proj_cut <- mask(do_proj_cut , mask)
-                do_proj_cut <- crop(do_proj_cut , mask)
-            }
-            writeRaster(x=do_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            rm(data2)
-          }
-        }
-  rm(do);rm(do_cont);rm(do_bin);rm(do_cut); gc()
-      }
+    if (Domain == T)
+        do_domain(sp = sp,
+                  occs = occs,
+                  predictors = predictors,
+                  pres_train = pres_train, #NEW
+                  pres_test = pres_test, #NEW
+                  backg_test = backg_test, #NEW
+                  i = i, #NEW
+                  e = eval, #NEW
+                  buffer = TRUE,
+                  buffer.type = "max",#"mean"
+                  part = 3,
+                  seed = NULL,#for reproducibility purposes
+                  output.folder = output.folder,
+                  project.model = F,
+                  projections = NULL,
+                  projdata = NULL,#um vector con nombres
+                  mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                  n.back = 500)
 
     if (maxent == T)
         do_maxent(sp = sp,

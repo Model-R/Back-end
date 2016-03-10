@@ -499,6 +499,92 @@ do_domain <- function(sp,
     }
 }
 
+do_mahal <- function(sp,
+                     occs = spp.filt,#complete occurrence table
+                     predictors = predictors,
+                     pres_train, #NEW
+                     pres_test, #NEW
+                     backg_test, #NEW
+                     i, #NEW
+                     e, #NEW
+                     buffer = TRUE,
+                     buffer.type = "max",#"mean"
+                     part = 3,
+                     seed = NULL,#for reproducibility purposes
+                     output.folder = "models",
+                     project.model = F,
+                     projections = NULL,
+                     projdata = NULL,#um vector con nombres
+                     mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                     n.back = 500) {
+    cat(paste("Mahalanobis distance",'\n'))
+    ma <- mahal (predictors, pres_train)
+    if (exists("ma")){
+        ema <- evaluate(pres_test,backg_test,ma,predictors)
+        thresholdma <- ema@t[which.max(ema@TPR + ema@TNR)]
+        thma <- threshold(ema)
+        ma_TSS <- max(ema@TPR + ema@TNR)-1
+        ma_cont <- predict(ma, predictors,progress='text')
+        ma_cont[ma_cont < threshold(ema,'no_omission')] <- threshold(ema,'no_omission')
+        ma_bin <- ma_cont > thresholdma
+        ma_cut <- ma_cont
+        ma_cut[ma_cut < thresholdma] <- thresholdma
+        if(minValue(ma_cut)<0) {
+            ma_cut<-(ma_cut-minValue(ma_cut))/maxValue(ma_cut-minValue(ma_cut))}
+        
+        thma$AUC <- ema@auc
+        thma$TSS <- ma_TSS
+        thma$algoritmo <- "Mahal"
+        thma$partition <- i
+        row.names(thma) <- paste(sp,i,"Mahal")
+        eval <- rbind(e,thma) #NEW
+        
+        if (class(mask) == "SpatialPolygonsDataFrame"){
+            ma_cont <- mask(ma_cont , mask)
+            ma_cont <- crop(ma_cont , mask)
+            ma_bin <- mask(ma_bin , mask)
+            ma_bin <- crop(ma_bin , mask)
+            ma_cut <- mask(ma_cut , mask)
+            ma_cut <- crop(ma_cut , mask)
+        }
+        writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        
+        png(filename=paste0("./",output.folder,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
+        plot(ma_cont,main=paste("Mahal raw","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
+        plot(ma_bin,main=paste("Mahal P/A","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
+        plot(ma_cut,main=paste("Mahal cut","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
+        dev.off()
+        
+        if (project.model == T){
+            for (proj in projections){
+                data <- list.files(paste0("./env/",proj),pattern=proj)
+                data2 <- stack(data)
+                ma_proj <- predict(data2,ma,progress='text')
+                ma_proj_bin <- ma_proj > thresholdma
+                ma_proj_cut <- ma_proj_bin * ma_proj
+                # Normaliza o modelo cut
+                #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
+                
+                if (class(mask) == "SpatialPolygonsDataFrame"){
+                    ma_proj <- mask(ma_proj , mask)
+                    ma_proj <- crop(ma_proj , mask)
+                    ma_proj_bin <- mask(ma_proj_bin , mask)
+                    ma_proj_bin <- crop(ma_proj_bin , mask)
+                    ma_proj_cut <- mask(ma_proj_cut , mask)
+                    ma_proj_cut <- crop(ma_proj_cut , mask)
+                }
+                writeRaster(x=ma_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                rm(data2)
+            }
+        }
+    }
+    else cat("Mahalanobis distance did not run")
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -700,75 +786,26 @@ dismo.mod <- function(sp,
                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                   n.back = 500)
 
-    if (Mahal == T){
-      cat(paste("Mahalanobis distance",'\n'))
-      ma <- mahal (predictors, pres_train)
-	if (exists("ma")){
-      ema <- evaluate(pres_test,backg_test,ma,predictors)
-      thresholdma <- ema@t[which.max(ema@TPR + ema@TNR)]
-      thma <- threshold(ema)
-      ma_TSS <- max(ema@TPR + ema@TNR)-1
-      ma_cont <- predict(ma, predictors,progress='text')
-      ma_cont[ma_cont < threshold(ema,'no_omission')] <- threshold(ema,'no_omission')
-      ma_bin <- ma_cont > thresholdma
-      ma_cut <- ma_cont
-      ma_cut[ma_cut < thresholdma] <- thresholdma
-      if(minValue(ma_cut)<0) {
-        ma_cut<-(ma_cut-minValue(ma_cut))/maxValue(ma_cut-minValue(ma_cut))}
-
-      thma$AUC <- ema@auc
-      thma$TSS <- ma_TSS
-      thma$algoritmo <- "Mahal"
-      thma$partition <- i
-      row.names(thma) <- paste(sp,i,"Mahal")
-      eval <- rbind(eval,thma)
-
-      if (class(mask) == "SpatialPolygonsDataFrame"){
-          ma_cont <- mask(ma_cont , mask)
-          ma_cont <- crop(ma_cont , mask)
-          ma_bin <- mask(ma_bin , mask)
-          ma_bin <- crop(ma_bin , mask)
-          ma_cut <- mask(ma_cut , mask)
-          ma_cut <- crop(ma_cut , mask)
-      }
-      writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
-      plot(ma_cont,main=paste("Mahal raw","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
-      plot(ma_bin,main=paste("Mahal P/A","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
-      plot(ma_cut,main=paste("Mahal cut","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          ma_proj <- predict(data2,ma,progress='text')
-          ma_proj_bin <- ma_proj > thresholdma
-          ma_proj_cut <- ma_proj_bin * ma_proj
-          # Normaliza o modelo cut
-          #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
-
-          if (class(mask) == "SpatialPolygonsDataFrame"){
-              ma_proj <- mask(ma_proj , mask)
-              ma_proj <- crop(ma_proj , mask)
-              ma_proj_bin <- mask(ma_proj_bin , mask)
-              ma_proj_bin <- crop(ma_proj_bin , mask)
-              ma_proj_cut <- mask(ma_proj_cut , mask)
-              ma_proj_cut <- crop(ma_proj_cut , mask)
-          }
-          writeRaster(x=ma_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=ma_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=ma_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-   rm(ma);rm(ma_cont);rm(ma_bin);rm(ma_cut); gc()
-    }
-else cat("Mahalanobis distance did not run")
-}
+    if (Mahal == T)
+        do_mahal(sp = sp,
+                 occs = occs,
+                 predictors = predictors,
+                 pres_train = pres_train, #NEW
+                 pres_test = pres_test, #NEW
+                 backg_test = backg_test, #NEW
+                 i = i, #NEW
+                 e = eval, #NEW
+                 buffer = TRUE,
+                 buffer.type = "max",#"mean"
+                 part = 3,
+                 seed = NULL,#for reproducibility purposes
+                 output.folder = output.folder,
+                 project.model = F,
+                 projections = NULL,
+                 projdata = NULL,#um vector con nombres
+                 mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                 n.back = 500)
+    
     if (GLM == T)
         do_GLM (sp,
                 occs = spp.filt,#complete occurrence table

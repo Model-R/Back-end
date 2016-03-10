@@ -596,9 +596,12 @@ else cat("Mahalanobis distance did not run")
           # Normaliza o modelo cut
           #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
                  if (class(mask) == "SpatialPolygonsDataFrame"){
-                    svm_proj <- svm_proj * mask
-                    svm_proj_bin <- svm_proj_bin * mask
-                    svm_proj_cut <- svm_proj_cut * mask
+                    svm_proj <- mask(svm_proj , mask)
+                    svm_proj <- crop(svm_proj , mask)
+                    svm_proj_bin <- mask(svm_proj_bin , mask)
+                    svm_proj_bin <- crop(svm_proj_bin , mask)
+                    svm_proj_cut <- mask(svm_proj_cut , mask)
+                    svm_proj_cut <- crop(svm_proj_cut , mask)
                  }
           writeRaster(x=svm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
           writeRaster(x=svm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -632,9 +635,12 @@ else cat("Mahalanobis distance did not run")
       svm2_cont <- svm2_cont/maxValue(svm2_cont)
       svm2_cut <- svm2_cut/maxValue(svm2_cut)
              if (class(mask) == "SpatialPolygonsDataFrame"){
-                 svm2_cont <- svm2_cont * mask
-                 svm2_bin <- svm2_bin * mask
-                 svm2_cut <- svm2_cut * mask
+                 svm2_cont <- mask(svm2_cont , mask)
+                 svm2_cont <- crop(svm2_cont , mask)
+                 svm2_bin <- mask(svm2_bin , mask)
+                 svm2_bin <- crop(svm2_bin , mask)
+                 svm2_cut <- mask(svm2_cut , mask)
+                 svm2_cut <- crop(svm2_cut , mask)
              }
       writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
       writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -656,9 +662,12 @@ else cat("Mahalanobis distance did not run")
           # Normaliza o modelo cut
           #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
                  if (class(mask) == "SpatialPolygonsDataFrame"){
-                     svm2_proj <- svm2_proj * mask
-                     svm2_proj_bin <- svm2_proj_bin * mask
-                     svm2_proj_cut <- svm2_proj_cut * mask
+                     svm2_proj <- mask(svm2_proj , mask)
+                     svm2_proj <- crop(svm2_proj , mask)
+                     svm2_proj_bin <- mask(svm2_proj_bin , mask)
+                     svm2_proj_bin <- crop(svm2_proj_bin , mask)
+                     svm2_proj_cut <- mask(svm2_proj_cut , mask)
+                     svm2_proj_cut <- crop(svm2_proj_cut , mask)
                  }
           writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
           writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")

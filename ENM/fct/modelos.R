@@ -250,6 +250,92 @@ do_SVM <- function(sp,
     }
 }
 
+do_maxent <- function(sp,
+                      occs = spp.filt,#complete occurrence table
+                      predictors = predictors,
+                      pres_train, #NEW
+                      pres_test, #NEW
+                      backg_test, #NEW
+                      i, #NEW
+                      e, #NEW
+                      buffer = TRUE,
+                      buffer.type = "max",#"mean"
+                      part = 3,
+                      seed = NULL,#for reproducibility purposes
+                      output.folder = "models",
+                      project.model = F,
+                      projections = NULL,
+                      projdata = NULL,#um vector con nombres
+                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      n.back = 500){
+    cat(paste("maxent",'\n'))
+    Sys.setenv(NOAWT=TRUE)#descomentei para ver
+    library(rJava)
+    mx <- maxent (predictors, pres_train)
+    png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
+    plot(mx)
+    dev.off()
+    
+    png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
+    response(mx)
+    dev.off()
+    
+    emx <- evaluate(pres_test,backg_test,mx,predictors)
+    thresholdmx <- emx@t[which.max(emx@TPR + emx@TNR)]
+    thmx <- threshold(emx)
+    mx_TSS <- max(emx@TPR + emx@TNR)-1
+    mx_cont <- predict(mx, predictors,progress='text')
+    mx_bin <- mx_cont > thresholdmx
+    mx_cut <- mx_cont * mx_bin
+    thmx$AUC <- emx@auc
+    thmx$TSS <- mx_TSS
+    thmx$algoritmo <- "maxent"
+    thmx$partition <- i
+    row.names(thmx) <- paste(sp,i,"maxent")
+    eval <- rbind(e,thmx) #NEW
+    if (class(mask) == "SpatialPolygonsDataFrame"){
+        mx_cont <- mask(mx_cont , mask)
+        mx_cont <- crop(mx_cont , mask)
+        mx_bin <- mask(mx_bin , mask)
+        mx_bin <- crop(mx_bin , mask)
+        mx_cut <- mask(mx_cut , mask)
+        mx_cut <- crop(mx_cut , mask)
+    }
+    writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    
+    png(filename=paste0("./",output.folder,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
+    plot(mx_cont,main=paste("Maxent raw","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
+    plot(mx_bin,main=paste("Maxent P/A","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
+    plot(mx_cut,main=paste("Maxent cut","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
+    dev.off()
+    
+    if (project.model == T){
+        for (proj in projections){
+            data <- list.files(paste0("./env/",proj),pattern=proj)
+            data2 <- stack(data)
+            mx_proj <- predict(data2,mx,progress='text')
+            mx_proj_bin <- mx_proj > thresholdmx
+            mx_proj_cut <- mx_proj_bin * mx_proj
+            # Normaliza o modelo cut
+            #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
+            if (class(mask) == "SpatialPolygonsDataFrame"){
+                mx_proj <- mask(mx_proj , mask)
+                mx_proj <- crop(mx_proj , mask)
+                mx_proj_bin <- mask(mx_proj_bin , mask)
+                mx_proj_bin <- crop(mx_proj_bin , mask)
+                mx_proj_cut <- mask(mx_proj_cut , mask)
+                mx_proj_cut <- crop(mx_proj_cut , mask)
+            }
+            writeRaster(x=mx_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            rm(data2)
+        }
+    }
+}
+
 dismo.mod <- function(sp,
                       occs = spp.filt,#complete occurrence table
                       predictors = predictors,
@@ -473,75 +559,25 @@ dismo.mod <- function(sp,
   rm(do);rm(do_cont);rm(do_bin);rm(do_cut); gc()
       }
 
-    if (maxent == T){
-      cat(paste("maxent",'\n'))
-      Sys.setenv(NOAWT=TRUE)#descomentei para ver
-      library(rJava)
-      mx <- maxent (predictors, pres_train)
-      png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
-      plot(mx)
-      dev.off()
-
-      png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
-      response(mx)
-      dev.off()
-
-      emx <- evaluate(pres_test,backg_test,mx,predictors)
-      thresholdmx <- emx@t[which.max(emx@TPR + emx@TNR)]
-      thmx <- threshold(emx)
-      mx_TSS <- max(emx@TPR + emx@TNR)-1
-      mx_cont <- predict(mx, predictors,progress='text')
-      mx_bin <- mx_cont > thresholdmx
-      mx_cut <- mx_cont * mx_bin
-      thmx$AUC <- emx@auc
-      thmx$TSS <- mx_TSS
-      thmx$algoritmo <- "maxent"
-      thmx$partition <- i
-      row.names(thmx) <- paste(sp,i,"maxent")
-      eval <- rbind(eval,thmx)
-      if (class(mask) == "SpatialPolygonsDataFrame"){
-          mx_cont <- mask(mx_cont , mask)
-          mx_cont <- crop(mx_cont , mask)
-          mx_bin <- mask(mx_bin , mask)
-          mx_bin <- crop(mx_bin , mask)
-          mx_cut <- mask(mx_cut , mask)
-          mx_cut <- crop(mx_cut , mask)
-      }
-      writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-      writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-
-      png(filename=paste0("./",output.folder,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
-      plot(mx_cont,main=paste("Maxent raw","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
-      plot(mx_bin,main=paste("Maxent P/A","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
-      plot(mx_cut,main=paste("Maxent cut","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
-      dev.off()
-
-      if (project.model == T){
-        for (proj in projections){
-          data <- list.files(paste0("./env/",proj),pattern=proj)
-          data2 <- stack(data)
-          mx_proj <- predict(data2,mx,progress='text')
-          mx_proj_bin <- mx_proj > thresholdmx
-          mx_proj_cut <- mx_proj_bin * mx_proj
-          # Normaliza o modelo cut
-          #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
-          if (class(mask) == "SpatialPolygonsDataFrame"){
-              mx_proj <- mask(mx_proj , mask)
-              mx_proj <- crop(mx_proj , mask)
-              mx_proj_bin <- mask(mx_proj_bin , mask)
-              mx_proj_bin <- crop(mx_proj_bin , mask)
-              mx_proj_cut <- mask(mx_proj_cut , mask)
-              mx_proj_cut <- crop(mx_proj_cut , mask)
-          }
-          writeRaster(x=mx_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=mx_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          writeRaster(x=mx_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-          rm(data2)
-        }
-      }
-       rm(mx);rm(mx_cont);rm(mx_bin);rm(mx_cut); gc()
-    }
+    if (maxent == T)
+        do_maxent(sp = sp,
+                  occs = occs,
+                  predictors = predictors,
+                  pres_train = pres_train, #NEW
+                  pres_test = pres_test, #NEW
+                  backg_test = backg_test, #NEW
+                  i = i, #NEW
+                  e = eval, #NEW
+                  buffer = TRUE,
+                  buffer.type = "max",#"mean"
+                  part = 3,
+                  seed = NULL,#for reproducibility purposes
+                  output.folder = output.folder,
+                  project.model = F,
+                  projections = NULL,
+                  projdata = NULL,#um vector con nombres
+                  mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                  n.back = 500)
 
     if (Mahal == T){
       cat(paste("Mahalanobis distance",'\n'))

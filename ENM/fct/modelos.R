@@ -473,7 +473,7 @@ else cat("Mahalanobis distance did not run")
           rm(data2)
         }
       }
-   rm(glmm);rm(glm_cont);rm(glm_bin);rm(glm_cut); gc()
+   rm(glm);rm(glm_cont);rm(glm_bin);rm(glm_cut); gc()
     }
 
     if (RF == T){

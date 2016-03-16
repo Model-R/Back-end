@@ -1,21 +1,16 @@
 do_bioclim <- function(sp,
-                       occs = spp.filt,#complete occurrence table
                        predictors = predictors,
                        pres_train, #NEW
                        pres_test, #NEW
                        backg_test, #NEW
                        i, #NEW
                        e, #NEW
-                       buffer = TRUE,
-                       buffer.type = "max",#"mean"
-                       part = 3,
-                       seed = NULL,#for reproducibility purposes
                        output.folder = "models",
                        project.model = F,
                        projections = NULL,
                        projdata = NULL,#um vector con nombres
-                       mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                       n.back = 500){
+                       mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                       ){
     cat(paste("Bioclim",'\n'))
     bc <- bioclim (predictors, pres_train)
     ebc <- evaluate(pres_test,backg_test,bc,predictors)
@@ -83,7 +78,6 @@ do_bioclim <- function(sp,
 }
 
 do_randomForest <- function(sp,
-                            occs = spp.filt,#complete occurrence table
                             predictors = predictors,
                             sdmdata_train, #NEW
                             envtest_pre, #NEW
@@ -91,17 +85,11 @@ do_randomForest <- function(sp,
                             i, #NEW
                             e, #NEW
                             envtrain, #NEW
-                            buffer = TRUE,
-                            buffer.type = "max",#"mean"
-                            part = 3,
-                            seed = NULL,#for reproducibility purposes
                             output.folder = "models",
                             project.model = F,
                             projections = NULL,
-                            projdata = NULL,#um vector con nombres
-                            #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                            mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                            n.back = 500){
+                            mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                            ){
     library(randomForest)
     cat(paste("Random Forests",'\n'))
     #rf1 <- tuneRF(x=envtrain,y=sdmdata_train$pa,stepFactor = 0.5)
@@ -169,7 +157,6 @@ do_randomForest <- function(sp,
 }
 
 do_SVM <- function(sp,
-                   occs = spp.filt,#complete occurrence table
                    predictors = predictors,
                    sdmdata_train, #NEW
                    envtest_pre, #NEW
@@ -177,17 +164,12 @@ do_SVM <- function(sp,
                    i, #NEW
                    e, #NEW
                    envtrain, #NEW
-                   buffer = TRUE,
-                   buffer.type = "max",#"mean"
                    part = 3,
-                   seed = NULL,#for reproducibility purposes
                    output.folder = "models",
                    project.model = F,
                    projections = NULL,
-                   projdata = NULL,#um vector con nombres
-                   #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                   n.back = 500){
+                   mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   ){
     cat(paste("SVM",'\n'))
     library(kernlab)
     svm <- ksvm(sdmdata_train$pa~.,data=envtrain,cross=part)##svm deve ser com a variável resposta binária ou contínua, eu acho que binária
@@ -255,23 +237,17 @@ do_SVM <- function(sp,
 }
 
 do_maxent <- function(sp,
-                      occs = spp.filt,#complete occurrence table
                       predictors = predictors,
                       pres_train, #NEW
                       pres_test, #NEW
                       backg_test, #NEW
                       i, #NEW
                       e, #NEW
-                      buffer = TRUE,
-                      buffer.type = "max",#"mean"
-                      part = 3,
-                      seed = NULL,#for reproducibility purposes
                       output.folder = "models",
                       project.model = F,
                       projections = NULL,
-                      projdata = NULL,#um vector con nombres
-                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                      n.back = 500){
+                      mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      ){
     cat(paste("maxent",'\n'))
     Sys.setenv(NOAWT=TRUE)#descomentei para ver
     library(rJava)
@@ -341,7 +317,6 @@ do_maxent <- function(sp,
 }
 
 do_GLM <- function(sp,
-                   occs = spp.filt,#complete occurrence table
                    predictors = predictors,
                    sdmdata_train, #NEW
                    envtest_pre, #NEW
@@ -349,17 +324,11 @@ do_GLM <- function(sp,
                    i, #NEW
                    e, #NEW
                    envtrain, #NEW
-                   buffer = TRUE,
-                   buffer.type = "max",#"mean"
-                   part = 3,
-                   seed = NULL,#for reproducibility purposes
                    output.folder = "models",
                    project.model = F,
                    projections = NULL,
-                   projdata = NULL,#um vector con nombres
-                   #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                   n.back = 500){##
+                   mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   ){##
     cat(paste("GLM",'\n'))
     null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
     full.model <- glm(sdmdata_train$pa~.,data=envtrain,family="binomial")
@@ -426,23 +395,17 @@ do_GLM <- function(sp,
 }
 
 do_domain <- function(sp,
-                      occs = spp.filt,#complete occurrence table
                       predictors = predictors,
                       pres_train, #NEW
                       pres_test, #NEW
                       backg_test, #NEW
                       i, #NEW
                       e, #NEW
-                      buffer = TRUE,
-                      buffer.type = "max",#"mean"
-                      part = 3,
-                      seed = NULL,#for reproducibility purposes
                       output.folder = "models",
                       project.model = F,
                       projections = NULL,
-                      projdata = NULL,#um vector con nombres
-                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                      n.back = 500){
+                      mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      ){
     cat(paste("Domain",'\n'))
     do <- domain (predictors, pres_train)
     edo <- evaluate(pres_test,backg_test,do,predictors)
@@ -504,23 +467,17 @@ do_domain <- function(sp,
 }
 
 do_mahal <- function(sp,
-                     occs = spp.filt,#complete occurrence table
                      predictors = predictors,
                      pres_train, #NEW
                      pres_test, #NEW
                      backg_test, #NEW
                      i, #NEW
                      e, #NEW
-                     buffer = TRUE,
-                     buffer.type = "max",#"mean"
-                     part = 3,
-                     seed = NULL,#for reproducibility purposes
                      output.folder = "models",
                      project.model = F,
                      projections = NULL,
-                     projdata = NULL,#um vector con nombres
-                     mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                     n.back = 500) {
+                     mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                     ){
     cat(paste("Mahalanobis distance",'\n'))
     ma <- mahal (predictors, pres_train)
     if (exists("ma")){
@@ -590,7 +547,6 @@ do_mahal <- function(sp,
 }
 
 do_SVM2 <- function(sp,
-                    occs = spp.filt,#complete occurrence table
                     predictors = predictors,
                     sdmdata_train, #NEW
                     envtest_pre, #NEW
@@ -598,17 +554,11 @@ do_SVM2 <- function(sp,
                     i, #NEW
                     e, #NEW
                     envtrain, #NEW
-                    buffer = TRUE,
-                    buffer.type = "max",#"mean"
-                    part = 3,
-                    seed = NULL,#for reproducibility purposes
                     output.folder = "models",
                     project.model = F,
                     projections = NULL,
-                    projdata = NULL,#um vector con nombres
-                    #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                    mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                    n.back = 500){
+                    mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                    ){
     cat(paste("SVM2",'\n'))
     library(e1071)
     svm2 <- best.tune("svm",envtrain,sdmdata_train$pa,data=envtrain)##svm deve ser com a variável resposta binária ou contínua, eu acho que binária
@@ -816,87 +766,63 @@ dismo.mod <- function(sp,
 
     if (Bioclim == T)
         do_bioclim(sp = sp,
-                   occs = occs,
                    predictors = predictors,
                    pres_train = pres_train, #NEW
                    pres_test = pres_test, #NEW
                    backg_test = backg_test, #NEW
                    i = i, #NEW
                    e = eval, #NEW
-                   buffer = TRUE,
-                   buffer.type = "max",#"mean"
-                   part = 3,
-                   seed = NULL,#for reproducibility purposes
                    output.folder = output.folder,
                    project.model = F,
                    projections = NULL,
                    projdata = NULL,#um vector con nombres
-                   mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                   n.back = 500)
+                   mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   )
 
     if (Domain == T)
         do_domain(sp = sp,
-                  occs = occs,
                   predictors = predictors,
                   pres_train = pres_train, #NEW
                   pres_test = pres_test, #NEW
                   backg_test = backg_test, #NEW
                   i = i, #NEW
                   e = eval, #NEW
-                  buffer = TRUE,
-                  buffer.type = "max",#"mean"
-                  part = 3,
-                  seed = NULL,#for reproducibility purposes
                   output.folder = output.folder,
                   project.model = F,
                   projections = NULL,
-                  projdata = NULL,#um vector con nombres
-                  mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                  n.back = 500)
+                  mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                  )
 
     if (maxent == T)
         do_maxent(sp = sp,
-                  occs = occs,
                   predictors = predictors,
                   pres_train = pres_train, #NEW
                   pres_test = pres_test, #NEW
                   backg_test = backg_test, #NEW
                   i = i, #NEW
                   e = eval, #NEW
-                  buffer = TRUE,
-                  buffer.type = "max",#"mean"
-                  part = 3,
-                  seed = NULL,#for reproducibility purposes
                   output.folder = output.folder,
                   project.model = F,
                   projections = NULL,
-                  projdata = NULL,#um vector con nombres
-                  mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                  n.back = 500)
+                  mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                  )
 
     if (Mahal == T)
         do_mahal(sp = sp,
-                 occs = occs,
                  predictors = predictors,
                  pres_train = pres_train, #NEW
                  pres_test = pres_test, #NEW
                  backg_test = backg_test, #NEW
                  i = i, #NEW
                  e = eval, #NEW
-                 buffer = TRUE,
-                 buffer.type = "max",#"mean"
-                 part = 3,
-                 seed = NULL,#for reproducibility purposes
                  output.folder = output.folder,
                  project.model = F,
                  projections = NULL,
-                 projdata = NULL,#um vector con nombres
-                 mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                 n.back = 500)
+                 mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                 )
     
     if (GLM == T)
         do_GLM (sp,
-                occs = spp.filt,#complete occurrence table
                 predictors = predictors,
                 sdmdata_train = sdmdata_train, #NEW
                 envtest_pre = envtest_pre, #NEW
@@ -904,21 +830,14 @@ dismo.mod <- function(sp,
                 i = i, #NEW
                 e = eval, #NEW
                 envtrain = envtrain, #NEW
-                buffer = TRUE,
-                buffer.type = "max",#"mean"
-                part = 3,
-                seed = NULL,#for reproducibility purposes
                 output.folder = output.folder,
                 project.model = F,
                 projections = NULL,
-                projdata = NULL,#um vector con nombres
-                #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                n.back = 500)
+                mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                )
 
     if (RF == T)
         do_randomForest(sp,
-                        occs = spp.filt,#complete occurrence table
                         predictors = predictors,
                         sdmdata_train = sdmdata_train, #NEW
                         envtest_pre = envtest_pre, #NEW
@@ -926,21 +845,14 @@ dismo.mod <- function(sp,
                         i = i, #NEW
                         e = eval, #NEW
                         envtrain = envtrain, #NEW
-                        buffer = TRUE,
-                        buffer.type = "max",#"mean"
-                        part = 3,
-                        seed = NULL,#for reproducibility purposes
                         output.folder = output.folder,
                         project.model = F,
                         projections = NULL,
-                        projdata = NULL,#um vector con nombres
-                        #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                        mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                        n.back = 500)
+                        mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                        )
 
     if (SVM == T)
         do_SVM (sp,
-                occs = spp.filt,#complete occurrence table
                 predictors = predictors,
                 sdmdata_train = sdmdata_train, #NEW
                 envtest_pre = envtest_pre, #NEW
@@ -948,21 +860,15 @@ dismo.mod <- function(sp,
                 i = i, #NEW
                 e = eval, #NEW
                 envtrain = envtrain, #NEW
-                buffer = TRUE,
-                buffer.type = "max",#"mean"
                 part = 3,
-                seed = NULL,#for reproducibility purposes
                 output.folder = output.folder,
                 project.model = F,
                 projections = NULL,
-                projdata = NULL,#um vector con nombres
-                #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                n.back = 500)
+                mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                )
 
     if (SVM2 == T)
         do_SVM2(sp,
-                occs = spp.filt,#complete occurrence table
                 predictors = predictors,
                 sdmdata_train = sdmdata_train, #NEW
                 envtest_pre = envtest_pre, #NEW
@@ -970,17 +876,11 @@ dismo.mod <- function(sp,
                 i = i, #NEW
                 e = eval, #NEW
                 envtrain = envtrain, #NEW
-                buffer = TRUE,
-                buffer.type = "max",#"mean"
-                part = 3,
-                seed = NULL,#for reproducibility purposes
                 output.folder = output.folder,
                 project.model = F,
                 projections = NULL,
-                projdata = NULL,#um vector con nombres
-                #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-                n.back = 500)
+                mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                )
 
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
     write.table(eval[-1,],file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))

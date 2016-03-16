@@ -1,4 +1,4 @@
-eigenvariables.fct <- function(vars, name, proportion){
+eigenvariables.fct <- function(vars, name, proportion = 0.95){
   library("raster")
   if (file.exists("./pca") == FALSE) dir.create("./pca")
   #Running PCA:
@@ -8,12 +8,12 @@ eigenvariables.fct <- function(vars, name, proportion){
   sr <- sampleRandom(vars, non.na)
   # faz o PCA dessa tabela padronizada
   pca <- prcomp(scale(sr))
-  summary <- summary(pca)
+  summary.pca <- summary(pca)
   #Saving results:
   capture.output(pca, file = sprintf('./pca/%s.pca.txt', name))
 
   #saving summary
-  capture.output(summary(pca), file = sprintf('./pca/%s.summary.pca.txt', name))
+  capture.output(summary.pca, file = sprintf('./pca/%s.summary.pca.txt', name))
 
   #Plotting results
   #GGPLOT
@@ -34,7 +34,8 @@ eigenvariables.fct <- function(vars, name, proportion){
   # dev.off()
 
   # Creating eigenvariable in space
-  eigenvariables <- predict(vars, pca, index = 1:length(which(summary$importance["Cumulative Proportion",] <= proportion)))
+  axis.nb <- which(summary.pca$importance["Cumulative Proportion",] >= proportion)[1]
+  eigenvariables <- predict(vars, pca, index = 1:axis.nb)
 
   if (file.exists("./env") == FALSE) dir.create("./env")
   writeRaster(eigenvariables,sprintf('./env/%s.eigenvariables.tif',name),overwrite=T)

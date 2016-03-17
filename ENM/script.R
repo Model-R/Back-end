@@ -221,7 +221,7 @@ sfClusterApplyLB(names.sp[N][1:123],
                  buffer = TRUE, buffer.type = "max",
                  seed=712, predictors = predictors, 
                  Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
-                 part=3, n.back=500, output.folder = "AVES_final", mask=mascara, crop=crop)
+                 part=3, n.back=500, output.folder = "AVES_final", mask=mascara)
 tFinal <- Sys.time()
 tFinal - tInicial
 sfStop()
@@ -366,7 +366,7 @@ sfClusterApplyLB(names.sp[N],
                  buffer = TRUE, buffer.type = "max",
                  seed=712, predictors = predictors, 
                  Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
-                 part=3, n.back=500, output.folder = "ANFIBIOS_final", mask=mascara, crop=crop)
+                 part=3, n.back=500, output.folder = "ANFIBIOS_final", mask=mascara)
 tFinal <- Sys.time()
 tFinal - tInicial
 sfStop()

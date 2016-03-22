@@ -860,7 +860,7 @@ dismo.mod <- function(sp,
                 i = i, #NEW
                 e = eval, #NEW
                 envtrain = envtrain, #NEW
-                part = 3,
+                part = part,
                 output.folder = output.folder,
                 project.model = F,
                 projections = NULL,

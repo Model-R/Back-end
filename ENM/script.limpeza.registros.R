@@ -1,4 +1,4 @@
-# Script for Flora's taxonomic cleaning
+# Script for Flora's taxonomic cleaning----
 # and Flora, anphibian and birds data organization:
 # (only species with more than 10 unique occurrences and atleast 50% of occurrences in Altantic Rain Forest will be modeled) -> spactial cleaning
 
@@ -8,7 +8,8 @@
 # registroslimpos.csv # Spacial data cleaning
 # Flora_occs_final.csv # Spacial data cleaning II
 
-# Library required
+# Loading data ----
+### Library required
 library(raster)
 library(rgdal)
 library(data.table)
@@ -19,17 +20,16 @@ predictors <-  raster::stack(list.files("./env",pattern="1K",full.names = T)[1])
 
 # Altantic Rain forest limit:
 crop <- readOGR(dsn="./data", layer="Bioma_MA1148")
-mascara<-rasterize(crop, predictors[[1]], field=crop@data$FID)
-#zonal_maks <- crop(mascara,crop)
+mascara <- rasterize(crop, predictors[[1]], field=crop@data$FID)
 
-# FLORA:
-## Taxonomic cleaning:----
-registros <- read.csv("./data/Atlantic_Domain_Ari_RevTaxon_Final.csv",sep=";")
+# FLORA:----
+registros <- read.csv("./data/Atlantic_Domain_Ari_RevTaxon_Final.csv", sep=";")
 nomes <- read.delim("./data/tax flora/lista final.txt")
 
 ### check results
 head(registros)
 names(registros)
+## Taxonomic cleaning:----
 
 ### combining genero and species name
 registros$old.sp <- paste(registros$genero,registros$especie)
@@ -103,11 +103,9 @@ occs <- occs[occs$FINAL%in%names.sp,]
 dim(occs)
 names(occs)
 ### Spatial data cleaning concluded: saving results:
-# write.csv(as.data.frame(table(droplevels(occs$FINAL))),"./data/tax flora/tableoccs.csv")
-#View(as.data.frame(table(droplevels(occs$FINAL))))
-#write.csv(occs,"./data/registroslimpos.csv")
+# write.csv(occs,"./data/registroslimpos.csv")
 ## Spatial data cleaning II: removing species with marginal distribution on Altantic Rainforest ----
-#occs <- read.csv("./data/registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
+# occs <- read.csv("./data/registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
 dim(occs)
 names.sp <- unique(occs$sp)
 names.sp <- sort(names.sp)####ISTO AQUI É ESSENCIAL PARA FAZER O TABLE
@@ -147,7 +145,8 @@ occs_final <- occs[occs$sp %in% names.sp,]
 dim(occs_final)
 unique(occs_final$sp)
 # Spatial data cleaning II done. Saving results
-#write.csv(occs_final,"./data/FLORA_occs_final.csv")
+# write.csv(occs_final,"./data/FLORA_occs_final.csv")
+# write.csv(as.data.frame(table3),"./data/Flora_table_occs.csv")
  
 # ANFIBIOS: ----
 registros <- read.csv("./data/anfibios.csv")
@@ -246,6 +245,7 @@ dim(occs_final)
 
 # Spatial data cleaning II done. Saving results
 # write.csv(occs_final,"./data/ANFIBIOS_occs_final.csv")
+# write.csv(as.data.frame(table3),"./data/Anfibios_table_occs.csv")
 # AVES: ----
 occs <- read.csv("./data/AVES_registroslimpos.csv",row.names=1,col.names=c("sp","lon","lat"))
 
@@ -337,3 +337,4 @@ dim(occs_final)
 
 # Spatial data cleaning II done. Saving results
 # write.csv(occs_final,"./data/AVES_occs_final.csv")
+# write.csv(as.data.frame(table3),"./data/Aves_table_occs.csv")

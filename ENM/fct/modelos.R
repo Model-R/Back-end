@@ -891,6 +891,6 @@ dismo.mod <- function(sp,
 
    #cat(paste("Saving the evaluation file...",sp,i,'\n'))
    #write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
-    cat(sp, "DONE on", date(), '\n')
+    cat(as.character(sp), "DONE on", date(), '\n')
     print(date())
   }

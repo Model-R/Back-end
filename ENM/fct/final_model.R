@@ -16,7 +16,7 @@ finalModel <- function(sp,
     library("data.table")
     cat(paste("Reading the evaluation files","\n"))
     evall <-
-        list.files( path = paste0(input.folder,"/",sp), pattern = paste0("evaluate",sp),full.names = T)
+        list.files(path = paste0(input.folder,"/",sp), pattern = "evaluate",full.names = T)
     lista <- list()
     for (i in 1:length(evall)) {
         lista[[i]] <- read.table(file = evall[i],header = T,row.names = 1)
@@ -39,12 +39,12 @@ finalModel <- function(sp,
         cat(paste("Reading models from .tif files","\n"))
         modelos.cont <-
             list.files(
-                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cont_",sp)
+                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cont_")
             )
 
         modelos.bin <-
             list.files(
-                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_bin_",sp)
+                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_bin_")
             )
         mod.cont <- stack(modelos.cont)#(0)
 

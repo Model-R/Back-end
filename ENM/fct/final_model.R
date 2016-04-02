@@ -135,6 +135,5 @@ finalModel <- function(sp,
         print(date())
 
 
-    return(todo)
     print(date())
 }

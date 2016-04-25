@@ -17,13 +17,10 @@ ensemble <- function(sp,
     library(maps)
 
     ## para cada tipo de modelo
-    for (i in 1:length(which.models)){
-      whi <- which.models[i]
+    for (whi in which.models){
 
     cat(paste(whi,"-",sp,"\n"))        #lê os arquivos
-        files <- list.files(paste0("./",input.folder1,"/",sp,"/",input.folder2),full.names=T,pattern=paste0(whi,sp))
-
-        tif.files <- files[grep(".tif",files,fixed=T)]##aqui eu pego só os tif
+        tif.files <- list.files(paste0("./",input.folder1,"/",sp,"/",input.folder2),full.names=T,pattern=paste0(whi,'.*tif$'))
 
         if(length(tif.files)==0) {
             cat(paste("No models to ensemble from for",sp,"\n"))

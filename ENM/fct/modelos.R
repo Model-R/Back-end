@@ -7,7 +7,7 @@ do_bioclim <- function(sp,
                        pres_test, #NEW
                        backg_test, #NEW
                        i, #NEW
-                       output.folder = "models",
+                       output.folder = "./models",
                        project.model = F,
                        projections = NULL,
                        projdata = NULL,#um vector con nombres
@@ -37,11 +37,11 @@ do_bioclim <- function(sp,
         bc_cut <- mask(bc_cut , mask)
         bc_cut <- crop(bc_cut , mask)
     }
-    writeRaster(x=bc_cont,filename=paste0("./",output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=bc_bin,filename=paste0("./",output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=bc_cut,filename=paste0("./",output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_cont,filename=paste0(output.folder,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_bin,filename=paste0(output.folder,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_cut,filename=paste0(output.folder,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
     plot(bc_cont,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
     plot(bc_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
     plot(bc_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
@@ -65,11 +65,11 @@ do_bioclim <- function(sp,
                 bc_proj_cut <- mask(bc_proj_cut , mask)
                 bc_proj_cut <- crop(bc_proj_cut , mask)
             }
-            writeRaster(x=bc_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=bc_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=bc_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
-            png(filename=paste0("./",output.folder,"/",sp,"/",proj,"/Bioclim",sp,"_",i,"%03d.png"))
+            png(filename=paste0(output.folder,"/",sp,"/",proj,"/Bioclim",sp,"_",i,"%03d.png"))
             plot(bc_proj,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
             plot(bc_proj_bin,main=paste("Bioclim P/A","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
             plot(bc_proj_cut,main=paste("Bioclim cut","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
@@ -86,7 +86,7 @@ do_randomForest <- function(sp,
                             envtest_back, #NEW
                             i, #NEW
                             envtrain, #NEW
-                            output.folder = "models",
+                            output.folder = "./models",
                             project.model = F,
                             projections = NULL,
                             mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
@@ -120,11 +120,11 @@ do_randomForest <- function(sp,
         rf_cut <- mask(rf_cut , mask)
         rf_cut <- crop(rf_cut , mask)
     }
-    writeRaster(x=rf_cont,filename=paste0("./",output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=rf_bin,filename=paste0("./",output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=rf_cut,filename=paste0("./",output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_cont,filename=paste0(output.folder,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_bin,filename=paste0(output.folder,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_cut,filename=paste0(output.folder,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/rf",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/rf",sp,"_",i,"%03d.png"))
     plot(rf_cont,main=paste("RF raw","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
     plot(rf_bin,main=paste("RF P/A","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
     plot(rf_cut,main=paste("RF cut","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
@@ -148,9 +148,9 @@ do_randomForest <- function(sp,
                 rf_proj_cut <- mask(rf_proj_cut , mask)
                 rf_proj_cut <- crop(rf_proj_cut , mask)
             }
-            writeRaster(x=rf_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=rf_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=rf_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -165,7 +165,7 @@ do_SVM <- function(sp,
                    i, #NEW
                    envtrain, #NEW
                    part = 3,
-                   output.folder = "models",
+                   output.folder = "./models",
                    project.model = F,
                    projections = NULL,
                    mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
@@ -199,11 +199,11 @@ do_SVM <- function(sp,
 	svm_cut <- crop(svm_cut , mask)
     }
     
-    writeRaster(x=svm_cont,filename=paste0("./",output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm_bin,filename=paste0("./",output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm_cut,filename=paste0("./",output.folder,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm_cont,filename=paste0(output.folder,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm_bin,filename=paste0(output.folder,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm_cut,filename=paste0(output.folder,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/svm",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/svm",sp,"_",i,"%03d.png"))
     plot(svm_cont,main=paste("SVM raw","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
     plot(svm_bin,main=paste("SVM P/A","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
     plot(svm_cut,main=paste("SVM cut","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
@@ -227,9 +227,9 @@ do_SVM <- function(sp,
 		    svm_proj_cut <- mask(svm_proj_cut , mask)
 		    svm_proj_cut <- crop(svm_proj_cut , mask)
             }
-            writeRaster(x=svm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -251,11 +251,11 @@ do_maxent <- function(sp,
     Sys.setenv(NOAWT=TRUE)#descomentei para ver
     library(rJava)
     mx <- maxent (predictors, pres_train)
-    png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
+    png(filename = paste0(output.folder,"/",sp,"/maxent_variable_contribution_",sp,"_",i,".png"))
     plot(mx)
     dev.off()
     
-    png(filename = paste0("./",output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
+    png(filename = paste0(output.folder,"/",sp,"/maxent_variable_response_",sp,"_",i,".png"))
     response(mx)
     dev.off()
     
@@ -279,11 +279,11 @@ do_maxent <- function(sp,
         mx_cut <- mask(mx_cut , mask)
         mx_cut <- crop(mx_cut , mask)
     }
-    writeRaster(x=mx_cont,filename=paste0("./",output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=mx_bin,filename=paste0("./",output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=mx_cut,filename=paste0("./",output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_cont,filename=paste0(output.folder,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_bin,filename=paste0(output.folder,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_cut,filename=paste0(output.folder,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
     plot(mx_cont,main=paste("Maxent raw","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
     plot(mx_bin,main=paste("Maxent P/A","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
     plot(mx_cut,main=paste("Maxent cut","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
@@ -306,9 +306,9 @@ do_maxent <- function(sp,
                 mx_proj_cut <- mask(mx_proj_cut , mask)
                 mx_proj_cut <- crop(mx_proj_cut , mask)
             }
-            writeRaster(x=mx_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=mx_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=mx_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -355,11 +355,11 @@ do_GLM <- function(sp,
         glm_cut <- mask(glm_cut , mask)
         glm_cut <- crop(glm_cut , mask)
     }
-    writeRaster(x=glm_cont,filename=paste0("./",output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=glm_bin,filename=paste0("./",output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=glm_cut,filename=paste0("./",output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_cont,filename=paste0(output.folder,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_bin,filename=paste0(output.folder,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_cut,filename=paste0(output.folder,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/glm",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/glm",sp,"_",i,"%03d.png"))
     plot(glm_cont,main=paste("GLM raw","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
     plot(glm_bin,main=paste("GLM P/A","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
     plot(glm_cut,main=paste("GLM cut","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
@@ -383,9 +383,9 @@ do_GLM <- function(sp,
                 glm_proj_cut <- mask(glm_proj_cut , mask)
                 glm_proj_cut <- crop(glm_proj_cut , mask)
             }
-            writeRaster(x=glm_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=glm_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=glm_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -426,11 +426,11 @@ do_domain <- function(sp,
         do_cut <- mask(do_cut , mask)
         do_cut <- crop(do_cut , mask)
     }
-    writeRaster(x=do_cont,filename=paste0("./",output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=do_bin,filename=paste0("./",output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=do_cut,filename=paste0("./",output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_cont,filename=paste0(output.folder,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_bin,filename=paste0(output.folder,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_cut,filename=paste0(output.folder,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
     plot(do_cont,main=paste("Domain raw","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
     plot(do_bin,main=paste("Domain P/A","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
     plot(do_cut,main=paste("Domain cut","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
@@ -454,9 +454,9 @@ do_domain <- function(sp,
                 do_proj_cut <- mask(do_proj_cut , mask)
                 do_proj_cut <- crop(do_proj_cut , mask)
             }
-            writeRaster(x=do_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -469,7 +469,7 @@ do_mahal <- function(sp,
                      pres_test, #NEW
                      backg_test, #NEW
                      i, #NEW
-                     output.folder = "models",
+                     output.folder = "./models",
                      project.model = F,
                      projections = NULL,
                      mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
@@ -503,11 +503,11 @@ do_mahal <- function(sp,
             ma_cut <- mask(ma_cut , mask)
             ma_cut <- crop(ma_cut , mask)
         }
-        writeRaster(x=ma_cont,filename=paste0("./",output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=ma_bin,filename=paste0("./",output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=ma_cut,filename=paste0("./",output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_cont,filename=paste0(output.folder,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_bin,filename=paste0(output.folder,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_cut,filename=paste0(output.folder,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
         
-        png(filename=paste0("./",output.folder,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
+        png(filename=paste0(output.folder,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
         plot(ma_cont,main=paste("Mahal raw","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
         plot(ma_bin,main=paste("Mahal P/A","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
         plot(ma_cut,main=paste("Mahal cut","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
@@ -531,9 +531,9 @@ do_mahal <- function(sp,
                     ma_proj_cut <- mask(ma_proj_cut , mask)
                     ma_proj_cut <- crop(ma_proj_cut , mask)
                 }
-                writeRaster(x=ma_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-                writeRaster(x=ma_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-                writeRaster(x=ma_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
                 rm(data2)
             }
         }
@@ -582,11 +582,11 @@ do_SVM2 <- function(sp,
 	    svm2_cut <- mask(svm2_cut , mask)
 	    svm2_cut <- crop(svm2_cut , mask)
     }
-    writeRaster(x=svm2_cont,filename=paste0("./",output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm2_bin,filename=paste0("./",output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm2_cut,filename=paste0("./",output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_cont,filename=paste0(output.folder,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_bin,filename=paste0(output.folder,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_cut,filename=paste0(output.folder,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     
-    png(filename=paste0("./",output.folder,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
+    png(filename=paste0(output.folder,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
     plot(svm2_cont,main=paste("SVM2 raw","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
     plot(svm2_bin,main=paste("SVM2 P/A","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
     plot(svm2_cut,main=paste("SVM2 cut","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
@@ -609,9 +609,9 @@ do_SVM2 <- function(sp,
 		    svm2_proj_cut <- mask(svm2_proj_cut , mask)
 		    svm2_proj_cut <- crop(svm2_proj_cut , mask)
             }
-            writeRaster(x=svm2_proj,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm2_proj_bin,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm2_proj_cut,filename=paste0("./",output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj,filename=paste0(output.folder,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj_bin,filename=paste0(output.folder,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj_cut,filename=paste0(output.folder,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             rm(data2)
         }
     }
@@ -633,7 +633,7 @@ dismo.mod <- function(sp,
                       SVM2 = F,
                       part = 3,
                       seed = NULL,#for reproducibility purposes
-                      output.folder = "models",
+                      output.folder = "./models",
                       project.model = F,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
@@ -641,11 +641,11 @@ dismo.mod <- function(sp,
                       mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       n.back = 500){
 
-  if (file.exists(paste0("./",output.folder)) == FALSE) dir.create(paste0("./",output.folder))
-  if (file.exists(paste0("./",output.folder,"/",sp)) == FALSE) dir.create(paste0("./",output.folder,"/",sp))
+  if (file.exists(paste0(output.folder)) == FALSE) dir.create(paste0(output.folder))
+  if (file.exists(paste0(output.folder,"/",sp)) == FALSE) dir.create(paste0(output.folder,"/",sp))
   if (project.model == T) {
     for (proj in projections){
-      if (file.exists(paste0("./",output.folder,"/",sp,"/",proj)) == FALSE) dir.create(paste0("./",output.folder,"/",sp,"/",proj))
+      if (file.exists(paste0(output.folder,"/",sp,"/",proj)) == FALSE) dir.create(paste0(output.folder,"/",sp,"/",proj))
     }
   }
 
@@ -716,7 +716,7 @@ dismo.mod <- function(sp,
   rbind_1 <- rbind(pres,back)
   sdmdata <- data.frame(cbind(group.all,pa,rbind_1))
    rm(rbind_1);rm(pres);rm(back); gc()
-  write.table(sdmdata,file = paste0("./",output.folder,"/",sp,"/sdmdata.txt"))
+  write.table(sdmdata,file = paste0(output.folder,"/",sp,"/sdmdata.txt"))
 
 
   #####Hace los modelos
@@ -740,7 +740,7 @@ dismo.mod <- function(sp,
     ##### Creates a .png plot of the initial dataset
     cat(paste("Plotting the dataset...",'\n'))
     extent <- extent(predictors)
-    png(filename=paste0("./",output.folder,"/",sp,"/",i,sp,"dataset.png"))
+    png(filename=paste0(output.folder,"/",sp,"/",i,sp,"dataset.png"))
     par(mfrow=c(1,1),mar=c(5,4,3,0))
     plot(predictors[[1]]!=0,col="grey95",main=paste(sp,"part.",i),legend=F)
     map('world',c('',"South America"),xlim=c(extent@xmin,extent@xmax),ylim=c(extent@ymin,extent@ymax),add=T)
@@ -886,11 +886,11 @@ dismo.mod <- function(sp,
     }
 
     cat(paste("Saving the evaluation file...",sp,i,'\n'))
-    write.table(eval_df[-1,],file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
+    write.table(eval_df[-1,],file = paste0(output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
     }
 
    #cat(paste("Saving the evaluation file...",sp,i,'\n'))
-   #write.table(eval,file = paste0("./",output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
+   #write.table(eval,file = paste0(output.folder,"/",sp,"/evaluate",sp,"_",i,".txt"))
     cat(as.character(sp), "DONE on", date(), '\n')
     print(date())
   }

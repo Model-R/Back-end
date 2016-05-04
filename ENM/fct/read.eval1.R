@@ -1,9 +1,9 @@
 #####-----
 #Function to organize the evaluate output from SDM to be used with xonsolidate.data().
 read.eval<-function(sp,
-                    input.folder1="FLORA_buffermax",
-                    input.folder2="FLORA_sem_buffer",
-                    output.folder="TSS_Evaluate"){
+                    input.folder1="./FLORA_buffermax",
+                    input.folder2="./FLORA_sem_buffer",
+                    output.folder="./TSS_Evaluate"){
 
 library("data.table")
   
@@ -105,11 +105,11 @@ library("data.table")
   rm(intermed_sd)
   
 #Salvando em HD
-  if (file.exists(paste0("./",output.folder))==FALSE) dir.create(paste0("./",output.folder))
+  if (file.exists(paste0(output.folder))==FALSE) dir.create(paste0(output.folder))
   
-  write.table(final_mean,file=paste0('./',output.folder,'/',sp,'_mean_results_tss.csv'), col.names=TRUE,row.names=FALSE)
+  write.table(final_mean,file=paste0(output.folder,'/',sp,'_mean_results_tss.csv'), col.names=TRUE,row.names=FALSE)
   
-  write.table(final_sd,file=paste0('./',output.folder,'/',sp,'_sd_results_tss.csv'), col.names=TRUE,row.names=FALSE)
+  write.table(final_sd,file=paste0(output.folder,'/',sp,'_sd_results_tss.csv'), col.names=TRUE,row.names=FALSE)
   #Nao remover
   rm(final_mean)
   rm(final_sd)
@@ -121,7 +121,7 @@ library("data.table")
 #####-----
 #Function to analyse(compare) the evaluate output from SDM, producing TSS Boxplot for each algorithm
 consolidate.data <- function(
-  input.folder1="TSS_Evaluate",
+  input.folder1="./TSS_Evaluate",
   stat='mean',
   name='TSS_analysis'
 ){
@@ -146,7 +146,7 @@ library("data.table")
           legend.title=element_text(face='bold',size=rel(1.5)),
           legend.text=element_text(size=rel(1.5)),
           legend.position="bottom")
-  ggsave(filename=paste0("./",input.folder1,"/",name,".png"))
+  ggsave(filename=paste0(input.folder1,"/",name,".png"))
 #  dev.off() #Not necessary when using ggsave
 #return(stats)
   rm(stats)
@@ -157,7 +157,7 @@ library("data.table")
 #####-----
 #Function to save the species name and final occurrence.
 species.table <- function(
-  output.folder="TSS_Evaluate",
+  output.folder="./TSS_Evaluate",
   table.name="n.sp.modelado"){
 n.sp<-table(occs$sp)
 n.sp<-as.data.frame(n.sp)
@@ -176,7 +176,7 @@ rm(n.sp.modelado)
 #####-----
 #Functio for making and cropping rasterLayer
 rasterCrop<- function(sp,
-                      input.folder = 'buffermax',
+                      input.folder = './buffermax',
                       mascara = raster,
                       crop = vctor_shape
 ){
@@ -200,7 +200,7 @@ rasterCrop<- function(sp,
 #Function to analyse perc ensemble between partitions and algorithms----
 partitionEnsemble <- function(
   sp,
-  projeto="FLORA_buffermax2",
+  projeto="./FLORA_buffermax2",
   input.folder='presfinal',
   algoritmos = c("maxent", "rf", "svm")){
   library(raster)
@@ -208,7 +208,7 @@ partitionEnsemble <- function(
   for (algo in 1:length(algoritmos)){
     
     #Lista raster binario saida 7 do algoritmo
-    modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0("bin7",sp,algoritmos[algo],'.tif'))
+    modelos.bin <- list.files(path = paste0(projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0("bin7",sp,algoritmos[algo],'.tif'))
     if(length(modelos.bin)==0){
       
       ensemble<-data.frame(ensemble=NA)
@@ -246,12 +246,12 @@ partitionEnsemble <- function(
 #Function to analyse the percentual ensemble between <> algorithms/species----
 spEnsemble <- function(
   sp,
-  projeto="FLORA_buffermax2",
+  projeto="./FLORA_buffermax2",
   input.folder='ensemble'){
   library(raster)
   library(data.table)
   #Lista raster binario saida 7 do algoritmo
-  modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7",'_ensemble.tif'))
+  modelos.bin <- list.files(path = paste0(projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7",'_ensemble.tif'))
   if(length(modelos.bin)==0){
     ensemble<-data.frame(ensemble=NA)
     ensemble$n.sp<-table2[(which(table2$sp==sp)),2]
@@ -280,9 +280,9 @@ spEnsemble <- function(
 
 # Funtion to conver raaster to smaller type----
 rast.convert<-function(sp,
-                       projeto='FLORA_buffermax2',
+                       projeto='./FLORA_buffermax2',
                        input.folder="ensemble"){
-  modelos.bin <- list.files(path = paste0("./",projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7_ensemble50.tif"))
+  modelos.bin <- list.files(path = paste0(projeto,"/",sp,"/", input.folder), full.names = T,pattern = paste0(".bin7_ensemble50.tif"))
   if(length(modelos.bin)==0){} else {
     modelos.bin<-raster(modelos.bin)
     writeRaster(modelos.bin, filename = paste0("./",projeto,"/final/",sp,".tif"), datatype="INT1U")

@@ -5,10 +5,10 @@ finalModel <- function(sp,
                         algoritmos = c("maxent", "rf", "svm"),#NULL,
                         threshold = c("spec_sens"),
                         TSS.value = 0.7,
-                        input.folder = "mods",
+                        input.folder = "./models",
                         output.folder = "presfinal") {
-    if (file.exists(paste0("./",input.folder,"/",sp,"/",output.folder)) == FALSE)
-        dir.create(paste0("./",input.folder,"/",sp,"/",output.folder), recursive = TRUE)
+    if (file.exists(paste0(input.folder,"/",sp,"/",output.folder)) == FALSE)
+        dir.create(paste0(input.folder,"/",sp,"/",output.folder), recursive = TRUE)
     print(date())
 
     cat(paste(sp,"\n"))
@@ -111,7 +111,7 @@ finalModel <- function(sp,
                     #Escribe final
                     writeRaster(
                         x = final,filename = paste0(
-                            "./",input.folder,"/",sp,"/",output.folder,"/",names(final),sp,algo
+                            input.folder,"/",sp,"/",output.folder,"/",names(final),sp,algo
                         ),bylayer = T,overwrite = T,format = "GTiff"
                     )
 

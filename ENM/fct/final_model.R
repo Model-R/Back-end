@@ -5,10 +5,10 @@ finalModel <- function(sp,
                         algoritmos = c("maxent", "rf", "svm"),#NULL,
                         threshold = c("spec_sens"),
                         TSS.value = 0.7,
-                        input.folder = "./models",
-                        output.folder = "presfinal") {
-    if (file.exists(paste0(input.folder,"/",sp,"/",output.folder)) == FALSE)
-        dir.create(paste0(input.folder,"/",sp,"/",output.folder), recursive = TRUE)
+                        models.dir = "./models",
+                        final.dir = "presfinal") {
+    if (file.exists(paste0(models.dir,"/",sp,"/",final.dir)) == FALSE)
+        dir.create(paste0(models.dir,"/",sp,"/",final.dir), recursive = TRUE)
     print(date())
 
     cat(paste(sp,"\n"))
@@ -16,7 +16,7 @@ finalModel <- function(sp,
     library("data.table")
     cat(paste("Reading the evaluation files","\n"))
     evall <-
-        list.files(path = paste0(input.folder,"/",sp), pattern = "evaluate",full.names = T)
+        list.files(path = paste0(models.dir,"/",sp), pattern = "evaluate",full.names = T)
     lista <- list()
     for (i in 1:length(evall)) {
         lista[[i]] <- read.table(file = evall[i],header = T,row.names = 1)
@@ -39,12 +39,12 @@ finalModel <- function(sp,
         cat(paste("Reading models from .tif files","\n"))
         modelos.cont <-
             list.files(
-                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_cont_")
+                path = paste0(models.dir,"/",sp),full.names = T,pattern = paste0(algo,"_cont_")
             )
 
         modelos.bin <-
             list.files(
-                path = paste0(input.folder,"/",sp),full.names = T,pattern = paste0(algo,"_bin_")
+                path = paste0(models.dir,"/",sp),full.names = T,pattern = paste0(algo,"_bin_")
             )
         mod.cont <- stack(modelos.cont)#(0)
 
@@ -111,14 +111,14 @@ finalModel <- function(sp,
                     #Escribe final
                     writeRaster(
                         x = final,filename = paste0(
-                            input.folder,"/",sp,"/",output.folder,"/",names(final),sp,algo
+                            models.dir,"/",sp,"/",final.dir,"/",names(final),sp,algo
                         ),bylayer = T,overwrite = T,format = "GTiff"
                     )
 
                     for (i in 1:dim(final)[[3]]) {
                         png(
                             filename = paste0(
-                                input.folder,"/",sp,"/",output.folder,"/",names(final)[i],sp,algo,".png"
+                                models.dir,"/",sp,"/",final.dir,"/",names(final)[i],sp,algo,".png"
                             )
                         )
                         plot(final[[i]],main = names(final)[i])

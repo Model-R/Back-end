@@ -715,7 +715,10 @@ dismo.mod <- function(sp,
   back <- cbind(backgr,backvals)
   rbind_1 <- rbind(pres,back)
   sdmdata <- data.frame(cbind(group.all,pa,rbind_1))
-   rm(rbind_1);rm(pres);rm(back); gc()
+   rm(rbind_1)
+   rm(pres)
+   rm(back)
+   gc()
   write.table(sdmdata,file = paste0(models.dir,"/",sp,"/sdmdata.txt"))
 
 
@@ -723,7 +726,7 @@ dismo.mod <- function(sp,
   for (i in unique(group)){
     cat(paste(sp,"partition number",i,'\n'))
     pres_train <- coord[group != i, ]
-    if(n == 1)pres_train <- coord[group == i,]
+    if(n == 1) pres_train <- coord[group == i,]
     pres_test  <-  coord[group  ==  i, ]
 
     backg_train <- backgr[bg.grp != i,]#not used?

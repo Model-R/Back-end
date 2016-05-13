@@ -30,12 +30,11 @@ do_bioclim <- function(sp,
     row.names(thbc) <- paste(sp,i,"BioClim")
 
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        bc_cont <- mask(bc_cont , mask)
-        bc_cont <- crop(bc_cont, mask)
-        bc_bin <- mask(bc_bin , mask)
-        bc_bin <- crop(bc_bin , mask)
-        bc_cut <- mask(bc_cut , mask)
-        bc_cut <- crop(bc_cut , mask)
+        source("./fct/cropModel.R")
+        bc_cont <- cropModel(bc_cont , mask)
+        bc_bin <- cropModel(bc_bin , mask)
+        bc_cut <- cropModel(bc_cut , mask)
+
     }
     writeRaster(x=bc_cont,filename=paste0(models.dir,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=bc_bin,filename=paste0(models.dir,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -58,12 +57,10 @@ do_bioclim <- function(sp,
             # Normaliza o modelo cut
             #bc_proj_cut <- bc_proj_cut/maxValue(bc_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-                bc_proj <- mask(bc_proj , mask)
-                bc_proj <- crop(bc_proj , mask)
-                bc_proj_bin <- mask(bc_proj_bin , mask)
-                bc_proj_bin <- crop(bc_proj_bin , mask)
-                bc_proj_cut <- mask(bc_proj_cut , mask)
-                bc_proj_cut <- crop(bc_proj_cut , mask)
+                source("./fct/cropModel.R")
+                bc_proj <- cropModel(bc_proj , mask)
+                bc_proj_bin <- cropModel(bc_proj_bin , mask)
+                bc_proj_cut <- cropModel(bc_proj_cut , mask)
             }
             writeRaster(x=bc_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=bc_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -114,12 +111,10 @@ do_randomForest <- function(sp,
     rf_cut <- rf_bin * rf_cont
     #rf1_cut <- rf1_cut/maxValue(rf1_cut)
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        rf_cont <- mask(rf_cont , mask)
-        rf_cont <- crop(rf_cont , mask)
-        rf_bin <- mask(rf_bin , mask)
-        rf_bin <- crop(rf_bin , mask)
-        rf_cut <- mask(rf_cut , mask)
-        rf_cut <- crop(rf_cut , mask)
+        source("./fct/cropModel.R")
+        rf_cont <- cropModel(rf_cont , mask)
+        rf_bin <- cropModel(rf_bin , mask)
+        rf_cut <- cropModel(rf_cut , mask)
     }
     writeRaster(x=rf_cont,filename=paste0(models.dir,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=rf_bin,filename=paste0(models.dir,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -142,12 +137,10 @@ do_randomForest <- function(sp,
             # Normaliza o modelo cut
             #rf_proj_cut <- rf_proj_cut/maxValue(rf_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-                rf_proj <- mask(rf_proj , mask)
-                rf_proj <- crop(rf_proj , mask)
-                rf_proj_bin <- mask(rf_proj_bin , mask)
-                rf_proj_bin <- crop(rf_proj_bin , mask)
-                rf_proj_cut <- mask(rf_proj_cut , mask)
-                rf_proj_cut <- crop(rf_proj_cut , mask)
+                source("./fct/cropModel.R")
+                rf_proj <- cropModel(rf_proj , mask)
+                rf_proj_bin <- cropModel(rf_proj_bin , mask)
+                rf_proj_cut <- cropModel(rf_proj_cut , mask)
             }
             writeRaster(x=rf_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=rf_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -193,12 +186,10 @@ do_SVM <- function(sp,
     svm_cont <- svm_cont/maxValue(svm_cont)
     svm_cut <- svm_cut/maxValue(svm_cut)
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        svm_cont <- mask(svm_cont , mask)
-        svm_cont <- crop(svm_cont , mask)
-        svm_bin <- mask(svm_bin , mask)
-        svm_bin <- crop(svm_bin , mask)
-	svm_cut <- mask(svm_cut , mask)
-	svm_cut <- crop(svm_cut , mask)
+        source("./fct/cropModel.R")
+        svm_cont <- cropModel(svm_cont , mask)
+        svm_bin <- cropModel(svm_bin , mask)
+        svm_cut <- cropModel(svm_cut , mask)
     }
 
     writeRaster(x=svm_cont,filename=paste0(models.dir,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -222,12 +213,10 @@ do_SVM <- function(sp,
             # Normaliza o modelo cut
             #svm_proj_cut <- svm_proj_cut/maxValue(svm_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-		    svm_proj <- mask(svm_proj , mask)
-		    svm_proj <- crop(svm_proj , mask)
-		    svm_proj_bin <- mask(svm_proj_bin , mask)
-		    svm_proj_bin <- crop(svm_proj_bin , mask)
-		    svm_proj_cut <- mask(svm_proj_cut , mask)
-		    svm_proj_cut <- crop(svm_proj_cut , mask)
+                source("./fct/cropModel.R")
+                svm_proj <- cropModel(svm_proj , mask)
+                svm_proj_bin <- cropModel(svm_proj_bin , mask)
+                svm_proj_cut <- cropModel(svm_proj_cut , mask)
             }
             writeRaster(x=svm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=svm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -275,12 +264,10 @@ do_maxent <- function(sp,
     thmx$partition <- i
     row.names(thmx) <- paste(sp,i,"maxent")
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        mx_cont <- mask(mx_cont , mask)
-        mx_cont <- crop(mx_cont , mask)
-        mx_bin <- mask(mx_bin , mask)
-        mx_bin <- crop(mx_bin , mask)
-        mx_cut <- mask(mx_cut , mask)
-        mx_cut <- crop(mx_cut , mask)
+        source("./fct/cropModel.R")
+        mx_cont <- cropModel(mx_cont , mask)
+        mx_bin <- cropModel(mx_bin , mask)
+        mx_cut <- cropModel(mx_cut , mask)
     }
     writeRaster(x=mx_cont,filename=paste0(models.dir,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=mx_bin,filename=paste0(models.dir,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -302,12 +289,10 @@ do_maxent <- function(sp,
             # Normaliza o modelo cut
             #mx_proj_cut <- mx_proj_cut/maxValue(mx_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-                mx_proj <- mask(mx_proj , mask)
-                mx_proj <- crop(mx_proj , mask)
-                mx_proj_bin <- mask(mx_proj_bin , mask)
-                mx_proj_bin <- crop(mx_proj_bin , mask)
-                mx_proj_cut <- mask(mx_proj_cut , mask)
-                mx_proj_cut <- crop(mx_proj_cut , mask)
+                source("./fct/cropModel.R")
+                mx_proj <- cropModel(mx_proj , mask)
+                mx_proj_bin <- cropModel(mx_proj_bin , mask)
+                mx_proj_cut <- cropModel(mx_proj_cut , mask)
             }
             writeRaster(x=mx_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=mx_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -352,12 +337,10 @@ do_GLM <- function(sp,
     # Normaliza o modelo cut
     #glm_cut <- glm_cut/maxValue(glm_cut)
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        glm_cont <- mask(glm_cont , mask)
-        glm_cont <- crop(glm_cont , mask)
-        glm_bin <- mask(glm_bin , mask)
-        glm_bin <- crop(glm_bin , mask)
-        glm_cut <- mask(glm_cut , mask)
-        glm_cut <- crop(glm_cut , mask)
+        source("./fct/cropModel.R")
+        glm_cont <- cropModel(glm_cont , mask)
+        glm_bin <- cropModel(glm_bin , mask)
+        glm_cut <- cropModel(glm_cut , mask)
     }
     writeRaster(x=glm_cont,filename=paste0(models.dir,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=glm_bin,filename=paste0(models.dir,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -380,12 +363,10 @@ do_GLM <- function(sp,
             #glm_proj_cut <- glm_proj_cut/maxValue(glm_proj_cut)
 
             if (class(mask) == "SpatialPolygonsDataFrame"){
-                glm_proj <- mask(glm_proj , mask)
-                glm_proj <- crop(glm_proj , mask)
-                glm_proj_bin <- mask(glm_proj_bin , mask)
-                glm_proj_bin <- crop(glm_proj_bin , mask)
-                glm_proj_cut <- mask(glm_proj_cut , mask)
-                glm_proj_cut <- crop(glm_proj_cut , mask)
+                source("./fct/cropModel.R")
+                glm_proj <- cropModel(glm_proj , mask)
+                glm_proj_bin <- cropModel(glm_proj_bin , mask)
+                glm_proj_cut <- cropModel(glm_proj_cut , mask)
             }
             writeRaster(x=glm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=glm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -424,12 +405,10 @@ do_domain <- function(sp,
     row.names(thdo) <- paste(sp,i,"Domain")
 
     if (class(mask) == "SpatialPolygonsDataFrame"){
-        do_cont <- mask(do_cont , mask)
-        do_cont <- crop(do_cont , mask)
-        do_bin <- mask(do_bin , mask)
-        do_bin <- crop(do_bin , mask)
-        do_cut <- mask(do_cut , mask)
-        do_cut <- crop(do_cut , mask)
+        source("./fct/cropModel.R")
+        do_cont <- cropModel(do_cont , mask)
+        do_bin <- cropModel(do_bin , mask)
+        do_cut <- cropModel(do_cut , mask)
     }
     writeRaster(x=do_cont,filename=paste0(models.dir,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=do_bin,filename=paste0(models.dir,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -452,12 +431,10 @@ do_domain <- function(sp,
             # Normaliza o modelo cut
             #do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-                do_proj <- mask(do_proj , mask)
-                do_proj <- crop(do_proj , mask)
-                do_proj_bin <- mask(do_proj_bin , mask)
-                do_proj_bin <- crop(do_proj_bin , mask)
-                do_proj_cut <- mask(do_proj_cut , mask)
-                do_proj_cut <- crop(do_proj_cut , mask)
+                source("./fct/cropModel.R")
+                do_proj <- cropModel(do_proj , mask)
+                do_proj_bin <- cropModel(do_proj_bin , mask)
+                do_proj_cut <- cropModel(do_proj_cut , mask)
             }
             writeRaster(x=do_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=do_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -502,12 +479,10 @@ do_mahal <- function(sp,
         row.names(thma) <- paste(sp,i,"Mahal")
 
         if (class(mask) == "SpatialPolygonsDataFrame"){
-            ma_cont <- mask(ma_cont , mask)
-            ma_cont <- crop(ma_cont , mask)
-            ma_bin <- mask(ma_bin , mask)
-            ma_bin <- crop(ma_bin , mask)
-            ma_cut <- mask(ma_cut , mask)
-            ma_cut <- crop(ma_cut , mask)
+            source("./fct/cropModel.R")
+            ma_cont <- cropModel(ma_cont , mask)
+            ma_bin <- cropModel(ma_bin , mask)
+            ma_cut <- cropModel(ma_cut , mask)
         }
         writeRaster(x=ma_cont,filename=paste0(models.dir,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
         writeRaster(x=ma_bin,filename=paste0(models.dir,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -530,12 +505,10 @@ do_mahal <- function(sp,
                 #ma_proj_cut <- ma_proj_cut/maxValue(ma_proj_cut)
 
                 if (class(mask) == "SpatialPolygonsDataFrame"){
-                    ma_proj <- mask(ma_proj , mask)
-                    ma_proj <- crop(ma_proj , mask)
-                    ma_proj_bin <- mask(ma_proj_bin , mask)
-                    ma_proj_bin <- crop(ma_proj_bin , mask)
-                    ma_proj_cut <- mask(ma_proj_cut , mask)
-                    ma_proj_cut <- crop(ma_proj_cut , mask)
+                    source("./fct/cropModel.R")
+                    ma_proj <- cropModel(ma_proj , mask)
+                    ma_proj_bin <- cropModel(ma_proj_bin , mask)
+                    ma_proj_cut <- cropModel(ma_proj_cut , mask)
                 }
                 writeRaster(x=ma_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
                 writeRaster(x=ma_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -582,12 +555,10 @@ do_SVM2 <- function(sp,
     svm2_cont <- svm2_cont/maxValue(svm2_cont)
     svm2_cut <- svm2_cut/maxValue(svm2_cut)
     if (class(mask) == "SpatialPolygonsDataFrame"){
-	    svm2_cont <- mask(svm2_cont , mask)
-	    svm2_cont <- crop(svm2_cont , mask)
-	    svm2_bin <- mask(svm2_bin , mask)
-	    svm2_bin <- crop(svm2_bin , mask)
-	    svm2_cut <- mask(svm2_cut , mask)
-	    svm2_cut <- crop(svm2_cut , mask)
+        source("./fct/cropModel.R")
+	    svm2_cont <- cropModel(svm2_cont , mask)
+	    svm2_bin <- cropModel(svm2_bin , mask)
+	    svm2_cut <- cropModel(svm2_cut , mask)
     }
     writeRaster(x=svm2_cont,filename=paste0(models.dir,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
     writeRaster(x=svm2_bin,filename=paste0(models.dir,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
@@ -609,12 +580,10 @@ do_SVM2 <- function(sp,
             # Normaliza o modelo cut
             #svm2_proj_cut <- svm2_proj_cut/maxValue(svm2_proj_cut)
             if (class(mask) == "SpatialPolygonsDataFrame"){
-		    svm2_proj <- mask(svm2_proj , mask)
-		    svm2_proj <- crop(svm2_proj , mask)
-		    svm2_proj_bin <- mask(svm2_proj_bin , mask)
-		    svm2_proj_bin <- crop(svm2_proj_bin , mask)
-		    svm2_proj_cut <- mask(svm2_proj_cut , mask)
-		    svm2_proj_cut <- crop(svm2_proj_cut , mask)
+                source("./fct/cropModel.R")
+                svm2_proj <- cropModel(svm2_proj , mask)
+		    svm2_proj_bin <- cropModel(svm2_proj_bin , mask)
+		    svm2_proj_cut <- cropModel(svm2_proj_cut , mask)
             }
             writeRaster(x=svm2_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
             writeRaster(x=svm2_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")

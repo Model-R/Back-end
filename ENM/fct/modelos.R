@@ -3,15 +3,15 @@
 
 do_bioclim <- function(sp,
                        predictors = predictors,
-                       pres_train, #NEW
-                       pres_test, #NEW
-                       backg_test, #NEW
-                       i, #NEW
-                       models.dir = "./models",
-                       project.model = F,
-                       projections = NULL,
-                       projdata = NULL,#um vector con nombres
-                       mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                       pres_train = pres_train, #NEW
+                       pres_test = pres_test, #NEW
+                       backg_test = backg_test, #NEW
+                       i = i, #NEW
+                       models.dir = model.dir,
+                       project.model = project.model,
+                       projections = projections,
+                       projdata = projdata,#um vector con nombres
+                       mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                        ){
     cat(paste("Bioclim",'\n'))
     bc <- bioclim (predictors, pres_train)
@@ -81,15 +81,16 @@ do_bioclim <- function(sp,
 
 do_randomForest <- function(sp,
                             predictors = predictors,
-                            sdmdata_train, #NEW
-                            envtest_pre, #NEW
-                            envtest_back, #NEW
-                            i, #NEW
-                            envtrain, #NEW
-                            models.dir = "./models",
-                            project.model = F,
-                            projections = NULL,
-                            mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                            sdmdata_train = sdmdata_train,
+                            envtest_pre = envtest_pre,
+                            envtest_back = envtest_back,
+                            i = i,
+                            envtrain = envtrain,
+                            models.dir = model.dir,
+                            project.model = project.model,
+                            projections = projections,
+                            projdata = projdata,#um vector con nombres
+                            mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                             ){
     library(randomForest)
     cat(paste("Random Forests",'\n'))
@@ -159,16 +160,17 @@ do_randomForest <- function(sp,
 
 do_SVM <- function(sp,
                    predictors = predictors,
-                   sdmdata_train, #NEW
-                   envtest_pre, #NEW
-                   envtest_back, #NEW
-                   i, #NEW
-                   envtrain, #NEW
-                   part = 3,
-                   models.dir = "./models",
-                   project.model = F,
-                   projections = NULL,
-                   mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   sdmdata_train = sdmdata_train,
+                   envtest_pre = envtest_pre,
+                   envtest_back = envtest_back,
+                   i = i,
+                   envtrain = envtrain,
+                   part = part,
+                   models.dir = model.dir,
+                   project.model = project.model,
+                   projections = projections,
+                   projdata = projdata,#um vector con nombres
+                   mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                    ){
     cat(paste("SVM",'\n'))
     library(kernlab)
@@ -238,14 +240,15 @@ do_SVM <- function(sp,
 
 do_maxent <- function(sp,
                       predictors = predictors,
-                      pres_train, #NEW
-                      pres_test, #NEW
-                      backg_test, #NEW
-                      i, #NEW
-                      models.dir = "models",
-                      project.model = F,
-                      projections = NULL,
-                      mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      pres_train = pres_train, #NEW
+                      pres_test = pres_test, #NEW
+                      backg_test = backg_test, #NEW
+                      i = i, #NEW
+                      models.dir = model.dir,
+                      project.model = project.model,
+                      projections = projections,
+                      projdata = projdata,#um vector con nombres
+                      mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       ){
     cat(paste("maxent",'\n'))
     Sys.setenv(NOAWT=TRUE)#descomentei para ver
@@ -317,15 +320,16 @@ do_maxent <- function(sp,
 
 do_GLM <- function(sp,
                    predictors = predictors,
-                   sdmdata_train, #NEW
-                   envtest_pre, #NEW
-                   envtest_back, #NEW
-                   i, #NEW
-                   envtrain, #NEW
-                   models.dir = "models",
-                   project.model = F,
-                   projections = NULL,
-                   mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                   sdmdata_train = sdmdata_train,
+                   envtest_pre = envtest_pre,
+                   envtest_back = envtest_back,
+                   i = i,
+                   envtrain = envtrain,
+                   models.dir = model.dir,
+                   project.model = project.model,
+                   projections = projections,
+                   projdata = projdata,#um vector con nombres
+                   mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                    ){##
     cat(paste("GLM",'\n'))
     null.model <- glm(sdmdata_train$pa~1,data=envtrain,family="binomial")
@@ -394,14 +398,15 @@ do_GLM <- function(sp,
 
 do_domain <- function(sp,
                       predictors = predictors,
-                      pres_train, #NEW
-                      pres_test, #NEW
-                      backg_test, #NEW
-                      i, #NEW
-                      models.dir = "models",
-                      project.model = F,
-                      projections = NULL,
-                      mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      pres_train = pres_train, #NEW
+                      pres_test = pres_test, #NEW
+                      backg_test = backg_test, #NEW
+                      i = i, #NEW
+                      models.dir = model.dir,
+                      project.model = project.model,
+                      projections = projections,
+                      projdata = projdata,#um vector con nombres
+                      mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       ){
     cat(paste("Domain",'\n'))
     do <- domain (predictors, pres_train)
@@ -465,14 +470,15 @@ do_domain <- function(sp,
 
 do_mahal <- function(sp,
                      predictors = predictors,
-                     pres_train, #NEW
-                     pres_test, #NEW
-                     backg_test, #NEW
-                     i, #NEW
-                     models.dir = "./models",
-                     project.model = F,
-                     projections = NULL,
-                     mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                     pres_train = pres_train, #NEW
+                     pres_test = pres_test, #NEW
+                     backg_test = backg_test, #NEW
+                     i = i, #NEW
+                     models.dir = model.dir,
+                     project.model = project.model,
+                     projections = projections,
+                     projdata = projdata,#um vector con nombres
+                     mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                      ){
     cat(paste("Mahalanobis distance",'\n'))
     ma <- mahal (predictors, pres_train)
@@ -544,15 +550,16 @@ do_mahal <- function(sp,
 
 do_SVM2 <- function(sp,
                     predictors = predictors,
-                    sdmdata_train, #NEW
-                    envtest_pre, #NEW
-                    envtest_back, #NEW
-                    i, #NEW
-                    envtrain, #NEW
-                    models.dir = "models",
-                    project.model = F,
-                    projections = NULL,
-                    mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                    sdmdata_train = sdmdata_train,
+                    envtest_pre = envtest_pre,
+                    envtest_back = envtest_back,
+                    i = i,
+                    envtrain = envtrain,
+                    models.dir = model.dir,
+                    project.model = project.model,
+                    projections = projections,
+                    projdata = projdata,#um vector con nombres
+                    mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                     ){
     cat(paste("SVM2",'\n'))
     library(e1071)
@@ -638,7 +645,7 @@ dismo.mod <- function(sp,
                       projections = NULL,
                       projdata = NULL,#um vector con nombres
                       #stack_gcms = "future_vars", # Lista dos stacks de cada GCM. Ex: stack1 <- stack(variaveis_HADGEM); stack2<-stack(variaveis_CANESM); stack_gcms<-c(stack1,stack2)
-                      mask = NULL,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                      mask = mask,# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       n.back = 500){
 
   if (file.exists(paste0(models.dir)) == FALSE) dir.create(paste0(models.dir))
@@ -740,128 +747,42 @@ backgr <- createBuffer(coord, n.back, buffer.type)
     eval_df <- data.frame("kappa"=1,"spec_sens"=1,"no_omission"=1,"prevalence"=1,"equal_sens_spec"=1,"sensitivity"=1,"AUC"=1,"TSS"=1,"algoritmo"="foo","partition"=1)
 
     if (Bioclim == T){
-        thbc <- do_bioclim(sp = sp,
-                           predictors = predictors,
-                           pres_train = pres_train, #NEW
-                           pres_test = pres_test, #NEW
-                           backg_test = backg_test, #NEW
-                           i = i, #NEW
-                           models.dir = models.dir,
-                           project.model = F,
-                           projections = NULL,
-                           projdata = NULL,#um vector con nombres
-                           mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thbc <- do_bioclim(sp)
         eval_df <- rbind(eval_df, thbc)
     }
 
     if (Domain == T){
-        thdo <- do_domain(sp = sp,
-                          predictors = predictors,
-                          pres_train = pres_train, #NEW
-                          pres_test = pres_test, #NEW
-                          backg_test = backg_test, #NEW
-                          i = i, #NEW
-                          models.dir = models.dir,
-                          project.model = F,
-                          projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thdo <- do_domain(sp)
         eval_df <- rbind(eval_df, thdo)
     }
 
     if (maxent == T){
-        thmx <- do_maxent(sp = sp,
-                          predictors = predictors,
-                          pres_train = pres_train, #NEW
-                          pres_test = pres_test, #NEW
-                          backg_test = backg_test, #NEW
-                          i = i, #NEW
-                          models.dir = models.dir,
-                          project.model = F,
-                          projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thmx <- do_maxent(sp)
         eval_df <- rbind(eval_df, thmx)
     }
 
     if (Mahal == T){
-        thma <- do_mahal(sp = sp,
-                         predictors = predictors,
-                         pres_train = pres_train, #NEW
-                         pres_test = pres_test, #NEW
-                         backg_test = backg_test, #NEW
-                         i = i, #NEW
-                         models.dir = models.dir,
-                         project.model = F,
-                         projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thma <- do_mahal(sp)
         eval_df <- rbind(eval_df, thma)
     }
 
     if (GLM == T){
-        thglm <- do_GLM (sp,
-                         predictors = predictors,
-                         sdmdata_train = sdmdata_train, #NEW
-                         envtest_pre = envtest_pre, #NEW
-                         envtest_back = envtest_back, #NEW
-                         i = i, #NEW
-                         envtrain = envtrain, #NEW
-                         models.dir = models.dir,
-                         project.model = F,
-                         projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thglm <- do_GLM (sp)
         eval_df <- rbind(eval_df, thglm)
     }
 
     if (RF == T){
-        thrf <- do_randomForest(sp,
-                                predictors = predictors,
-                                sdmdata_train = sdmdata_train, #NEW
-                                envtest_pre = envtest_pre, #NEW
-                                envtest_back = envtest_back, #NEW
-                                i = i, #NEW
-                                envtrain = envtrain, #NEW
-                                models.dir = models.dir,
-                                project.model = F,
-                                projections = NULL,
-                                mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thrf <- do_randomForest(sp)
         eval_df <- rbind(eval_df, thrf)
     }
 
     if (SVM == T){
-        thsvm <- do_SVM (sp,
-                         predictors = predictors,
-                         sdmdata_train = sdmdata_train, #NEW
-                         envtest_pre = envtest_pre, #NEW
-                         envtest_back = envtest_back, #NEW
-                         i = i, #NEW
-                         envtrain = envtrain, #NEW
-                         part = part,
-                         models.dir = models.dir,
-                         project.model = F,
-                         projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thsvm <- do_SVM (sp)
         eval_df <- rbind(eval_df, thsvm)
     }
 
     if (SVM2 == T){
-        thsvm2 <- do_SVM2(sp,
-                          predictors = predictors,
-                          sdmdata_train = sdmdata_train, #NEW
-                          envtest_pre = envtest_pre, #NEW
-                          envtest_back = envtest_back, #NEW
-                          i = i, #NEW
-                          envtrain = envtrain, #NEW
-                          models.dir = models.dir,
-                          project.model = F,
-                          projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
-        )
+        thsvm2 <- do_SVM2(sp)
         eval_df <- rbind(eval_df, thsvm2)
     }
 

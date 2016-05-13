@@ -22,7 +22,7 @@ library("rgdal")
 predictors <-  stack(list.files("./env",pattern="1K",full.names = T)[1])
 # Cortando pela MataAtlantica:
 mascara <- readOGR(dsn="./data", layer="Bioma_MA1148")
-
+plot(mascara)
 # FLORA ----
 # Loading occorrences:
 occs <- read.csv("./data/FLORA_occs_final.csv")
@@ -54,12 +54,12 @@ sfSource("./fct/modelos.R")
 
 #Com buffer ----
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N][1:123], 
-                 dismo.mod, 
-                 occs=occs,  
+sfClusterApplyLB(names.sp[N][1:123],
+                 dismo.mod,
+                 occs=occs,
                  buffer = TRUE, buffer.type = "max",
-                 seed=712, predictors = predictors, 
-                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "FLORA_buffermax_040316", mask=mascara)
 
 tFinal <- Sys.time()
@@ -77,12 +77,12 @@ sfLibrary(raster)
 sfSource("./fct/modelos.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
-                 dismo.mod, 
-                 occs=occs,  
+sfClusterApplyLB(names.sp[N,],
+                 dismo.mod,
+                 occs=occs,
                  buffer = FALSE, buffer.type = "",
-                 seed=712, predictors = predictors, 
-                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "FLORA_sem_buffer")
 
 tFinal <- Sys.time()
@@ -215,12 +215,12 @@ sfSource("./fct/modelos.R")
 #AVES Com buffer ----
 args(dismo.mod)
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N][1:123], 
-                 dismo.mod, 
-                 occs=occs,  
+sfClusterApplyLB(names.sp[N][1:123],
+                 dismo.mod,
+                 occs=occs,
                  buffer = TRUE, buffer.type = "max",
-                 seed=712, predictors = predictors, 
-                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "AVES_final", mask=mascara)
 tFinal <- Sys.time()
 tFinal - tInicial
@@ -235,12 +235,12 @@ sfLibrary(raster)
 sfSource("./fct/modelos.R")
 
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
-                 dismo.mod, 
-                 occs=occs,  
+sfClusterApplyLB(names.sp[N,],
+                 dismo.mod,
+                 occs=occs,
                  buffer = FALSE, buffer.type = "",
-                 seed=712, predictors = predictors, 
-                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "AVES_sem_buffer")
 
 tFinal <- Sys.time()
@@ -360,12 +360,12 @@ sfSource("./fct/modelos.R")
 
 #ANFIBIOS Com buffer ----
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N], 
-                 dismo.mod, 
-                 occs=occs,  
+sfClusterApplyLB(names.sp[N],
+                 dismo.mod,
+                 occs=occs,
                  buffer = TRUE, buffer.type = "max",
-                 seed=712, predictors = predictors, 
-                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=F, Domain=F, Mahal=F, GLM=F, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "ANFIBIOS_final", mask=mascara)
 tFinal <- Sys.time()
 tFinal - tInicial
@@ -380,14 +380,14 @@ sfLibrary(rJava) #removido aspas.
 sfLibrary(raster)
 sfSource("./fct/modelos.R")
 
-#ANFIBIOS sem buffer 
+#ANFIBIOS sem buffer
 tInicial <- Sys.time()
-sfClusterApplyLB(names.sp[N,], 
+sfClusterApplyLB(names.sp[N,],
                  dismo.mod,
-                 occs=occs,  
+                 occs=occs,
                  buffer = FALSE, buffer.type = "",
-                 seed=712, predictors = predictors, 
-                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T, 
+                 seed=712, predictors = predictors,
+                 Bioclim=T, Domain=T, Mahal=F, GLM=T, RF=T, SVM=T, SVM2=F, maxent=T,
                  part=3, n.back=500, output.folder = "ANFIBIOS_sem_buffer")
 
 tFinal <- Sys.time()
@@ -497,7 +497,7 @@ tar cjf NomeArquivoCompactado.tar.bz2 NomeDaPastaASerCompactada
 #DESCOMPACTANDO
 tar -xvfj NomeArquivoCompactado.tar.bz2
 
-#fazendo download 
+#fazendo download
 #Fora do buriti executar
 sftp felipe@buriti.lncc.br
 get nome_do_arquivo

@@ -1,50 +1,43 @@
 ###############
 # Script for data preparation using GDAL tools and Linux terminal
 #
-#Author: Felipe Barros (f.barros@iis-rio.org)
+# Author: Felipe Barros (f.barros@iis-rio.org)
 #
-#Institution: International Institute for Sustainability (IIS-Rio.org)
+# Institution: International Institute for Sustainability (IIS-Rio.org)
 #
 # this script was developed to ensure the documentation of all procedures and that all rasters has the same propreties:
 # Origin: 
-# Pixel resolution: 1000, 1000 (in decimal degrees)
-#Raster Extent: -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724
-#SRC (Albers):
+# Pixel resolution: 1000, 1000 (in meters)
+# Raster Extent: -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724
+# SRC (Albers):
 #
 ###############
-- calculate the sdm's in the 0.01 degree grid, as you have already done (that is presumably finished by now)
 
-- project the final output of the SDM (the binary raster that is the product of the 3 binary partitioned rasters) to the South America Albers projection and resample the cells to exactly 1000m x 1000m (nearest neighbour resampling)
+## DATA PREPARATION
 
-###############
---##saindo do R
-quit()
---##
-##DATA PREPARATION
-
---##Using data from SDM a regular vector grid was created.
+--## Using data from SDM as standart for a vector grid:
 cd psql/modelagem_priorizacao/
-#Modified the SDM to Albers QGIS
-#Resampling the grid to 1000X1000 Km² due to Albers transofrmation the pixel size in bigger than 1000
+# Modified the SDM to Albers QGIS
+# Resampling the grid to 1000X1000 Km² due to Albers transofrmation the pixel size in bigger than 1000
 gdalwarp -dstnodata 0 -tr 1000 -1000 -r "near" -of GTiff Alt_Albers.tif modelo_albers_100.tif -overwrite
 
 --## Transofrming the raster to SQL raster then importing to PostGIS to use as reference raster.
 raster2pgsql -c -C -s 102033 -b 1 -I -M modelo_albers_100.tif public.rast_modelo>rast.sql
 sudo su
 su postgres
-	--##Importing sql file to DB
+--## Importing sql file to DB
 psql -d modelagem -f rast.sql 
 
---##After converted the raster to shp, saving it as SQL and importing to PostGIS
+--## After converted the raster to shp on GIS, saving it as SQL and importing to PostGIS
 shp2pgsql -W LATIN1 -s 102033 grid_modelo_Albers.shp public.grid_priori_ma>grid.sql
 sudo su
 su postgres
-	--##Before, Albers projection must be implemented in DB:
+--## Before, Albers projection must be implemented in DB:
 INSERT into spatial_ref_sys (srid, auth_name, auth_srid, proj4text, srtext) values ( 102033, 'ESRI', 102033, '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs ', 'PROJCS["South_America_Albers_Equal_Area_Conic",GEOGCS["GCS_South_American_1969",DATUM["South_American_Datum_1969",SPHEROID["GRS_1967_Truncated",6378160,298.25]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["False_Easting",0],PARAMETER["False_         ",0],PARAMETER["longitude_of_center",-60],PARAMETER["Standard_Parallel_1",-5],PARAMETER["Standard_Parallel_2",-42],PARAMETER["latitude_of_center",-32],UNIT["Meter",1],AUTHORITY["EPSG","102033"]]');
-	--##Importing sql file to DB
+--## Importing sql file to DB
 psql -d modelagem -f grid.sql 
 
---##Removing the external grid (using R)
+--## Removing the external grid (using R)
 R
 install.packages('RPostgreSQL')
 library(RPostgreSQL)
@@ -57,22 +50,35 @@ print(Sys.time()-start)
 }
 quit()
 
-#Adciionando coluna de area em ha
-alter table priorizacao_ma.grid_priori_ma add column area_ha numeric(10,2);
-alter table priorizacao_ma.grid_priori_ma add column area numeric(10,2);
+# adding all columns that will be used
+--area_ha
+ALTER TABLE priorizacao_ma.grid_priori_ma add column area_ha numeric(10,2) NOT NULL DEFAULT(0);
+--area
+ALTER TABLE priorizacao_ma.grid_priori_ma add column area numeric(10,2) NOT NULL DEFAULT(0);
+--perc_remnant
+ALTER TABLE priorizacao_ma.grid_priori_ma add column perc_remnant numeric(10,2) NOT NULL DEFAULT(0);
+--perct_restoration
+ALTER TABLE priorizacao_ma.grid_priori_ma add column perct_restoration numeric(10,2) NOT NULL DEFAULT(0);
 
-#Adicionando informacao de area
+# Adding area information
 update priorizacao_ma.grid_priori_ma set area_ha = st_area(geom)/10000;
 update priorizacao_ma.grid_priori_ma set area = st_area(geom);
+# Creating table with real Altlantic Rain forest area (Considering the area of bioma in the grid only):
+--drop table priorizacao_ma.ma_real
+CREATE table priorizacao_ma.ma_real AS
+	SELECT g.id as id,
+	row_number() over () as id2,
+	ST_Multi(st_intersection(g.geom,st_transform(ma.geom, 102033)))::geometry(MultiPolygon,102033) as real_geom,
+	st_area(st_intersection(g.geom,st_transform(ma.geom, 102033)))/10000 as realarea_ha
+	FROM priorizacao_ma.grid_priori_ma as g 
+	JOIN biorregioes.ma_1148 as ma
+	on ((g.geom && st_transform(ma.geom, 102033)) and st_intersects(g.geom, st_transform(ma.geom, 102033)));
+--limit 255964
 
-#Testing
-select max(area_ha) from grid_priori_ma 
-select min(area_ha) from grid_priori_ma 
-
-#backuping
+# backuping
 pg_dump modelagem --table=grid_priori_ma> grid_priori_ma.backup
 pg_dump modelagem --table=rast_modelo> rast_modelo.backup
-#restoring in other DB
+# restoring in other DB
 psql -f grid_priori_ma.backup iis
 psql -f rast_modelo.backup iis
 
@@ -88,14 +94,10 @@ CREATE INDEX grid_priori_ma_geom_gist ON grids.grid_priori_ma USING GIST (geom);
 CREATE INDEX rem_11_12_albers_gist ON sos_ma.remanescentes_2011_2012 USING GIST (geom_albers);
 
 #####
---##layer: raster with total forest area remnant.
+--## 1) layer: raster with total forest area remnant.
 #####
-#Adciionando coluna de perct_remnant
-alter table priorizacao_ma.grid_priori_ma add column perc_remnant numeric(10,2);
-ALTER TABLE priorizacao_ma.grid_priori_ma
-	ADD COLUMN perc_remnant numeric(10,2) NOT NULL DEFAULT(0);
-
-#Adicionando percent area
+# The column perct_remnant will be used.
+# 1.1) updating table setting perct_remnant with percent of forest in grid.
 update priorizacao_ma.grid_priori_ma as g set perc_remnant = p.perc_veg from (
 select 
 g.gid,
@@ -105,33 +107,28 @@ g.gid,
 	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom) p
 	where g.gid=p.gid;
 
---## Exporting from postgis to shp2
+--## 1.2) Exporting from postgis to shp2
 \q
 exit
 
 pgsql2shp -f /home/felipe/psql/forest_area.shp -h localhost -u postgres -P postgres iis priorizacao_ma.grid_priori_ma
 
---##Rasterizing
+--## 1.3) Rasterizing
 gdal_rasterize -a PERC_REMNA -tr 1000 1000 -a_nodata 999 -l forest_area -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/forest_area.shp /home/felipe/psql/forest_area.tif
 gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.gz
 
---##Trying to rasterize in postgis
-#SELECT ronw_number() over() as id, ST_AsRaster(geom, (select rast from priorizacao_ma.rast_modelo limit 1), '32BF', #perc_remnant, -9999)) 
-#FROM priorizacao_ma.grid_priori_ma limit 10;
-
-#SELECT ST_Union(ST_AsRaster(geom, rast, '32BF', height, -9999)) rast
-#FROM forestcover, (SELECT rast FROM elevation LIMIT 1) rast;
 
 #####
---##layer: raster with oportunity cost
+--## 2) layer: raster with oportunity cost
 #####
-
+--## Data was produced by Daniel Silva (d.silva@iis-rio.org)
+--## 2.1) Rasterizing vector layer
 gdal_rasterize -a Op_cost -tr 1000 1000 -a_nodata 999 -l Oportunity_cost -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Oportunity_cost.shp /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Oportunity_cost_albers.tif
 
 #####
---##layer: raster with area to be restored.
+--## 3) layer: raster with area to be restored.
 #####
-#Criando uma tabela unindo geometria de todas as areas que não podem ter restauracao:
+--## 3.1) A unique vector layer was created merging all areas that should'nt be restored (e.g.: Urban Areas):
 	--agua: bc250.hid_massa_dagua_a; bc250.hid_trecho_massa_dagua_a; bc250.hid_rocha_em_agua_a as rocha_agua
 	--extracao vegetal: bc250.eco_area_agropec_ext_vegetal_pesca_a
 	--industrias: bc250.eco_edif_industrial_a; bc250.eco_ext_mineral_a
@@ -141,71 +138,37 @@ gdal_rasterize -a Op_cost -tr 1000 1000 -a_nodata 999 -l Oportunity_cost -te -16
 	--DESCONSIDERADO: mineração em fase de mineracao: dnpm.dnpm where dnpm.fase in ('CONCESSÃO DE LAVRA','LAVRA GARIMPEIRA','LICENCIAMENTO','REGISTRO DE EXTRAÇÃO')
 	--Area urbana: ibge.setores_censitarios where urbana.tipo='URBANO'
 	--Area de floresta: sos_ma.remanescentes_2011_2012 where florestas.legenda like 'Decremento%' or florestas.legenda like 'NMata%' or florestas.legenda like 'Desmatamento%';
---#All data were merged and dissolved
-cd /home/felipe/psql/modelagem_priorizacao/
-ls *.shp -1
-shp2pgsql -W LATIN1 -s 102033 TeRestore_Albers.shp public.torestore>torestore.sql
-sudo su postgres
-
---##Importing sql file to DB
-psql -d modelagem -f torestore.sql 
-
-#backuping
-pg_dump modelagem --table=torestore> torestore.backup
-
-#restoring in other DB
-psql -f torestore.backup iis
-
-#Changing the schema
-psql iis
-ALTER TABLE public.torestore SET SCHEMA priorizacao_ma;
-
-#Creating spatial index
-CREATE INDEX torestore_geom_gist ON priorizacao_ma.torestore USING GIST (geom);
-\q
-exit
-
-#Adicionando coluna de perct_restoration
-
---## NOTE percent retore is thje erase (difference) of grid with area not to restore!!!
-ALTER TABLE priorizacao_ma.grid_priori_ma add column perct_restoration numeric(10,2) NOT NULL DEFAULT(0);
-
-#Adicionando percent restoration area
-update priorizacao_ma.grid_priori_ma as g set perct_restoration = p.perc_rest from (
-WITH grid_ma AS(
-	SELECT g.id as id,
-	st_intersection(g.geom,st_transform(ma.geom, 102033)) as real_geom,
-	st_area(st_intersection(g.geom,st_transform(ma.geom, 102033)))/10000 as realarea_ha
-	FROM priorizacao_ma.grid_priori_ma as g 
-	JOIN biorregioes.ma_1148 as ma
-	on ((g.geom && st_transform(ma.geom, 102033)) and st_intersects(g.geom, st_transform(ma.geom, 102033))) 
-limit 255964)
-select 
-greal.id,
-round((sum((st_area(st_Difference(real_geom, f.geom))/10000)/realarea_ha)*100)::numeric,2)
- as perc_rest
-	from grid_ma as greal
-	join priorizacao_ma.torestore as f 
-	on ((greal.real_geom && f.geom) 
-	and st_intersects(greal.real_geom, f.geom)) 
-	Group by greal.id
-	) p
-	where g.id=p.id;
+--#All data were merged and dissolved using GIS
 
 
-
-
-	select count(g.gid) FROM priorizacao_ma.grid_priori_ma as g 
-	join priorizacao_ma.torestore as f 
-	on ((g.geom && f.geom) 
-	and st_intersects(g.geom, f.geom))
-
-
+#############
+# 3.2) After GIS processing: rasterizing
+gdal_rasterize -a restore -tr 1000 1000 -a_nodata 999 -l grid_ma_Albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/grid_ma_Albers.shp /home/felipe/psql/modelagem_priorizacao/Area_ToRestore_albers.tif
 
 #####
-##DATA CONVERSION
+--## 4) layer: raster with area to be restored discounting Riparian area (From Britaldo).
 #####
+##-- Britaldo raster layer
+# 4.1) cropping raster without changing pixel size
+gdalwarp -multi -dstnodata 0 -q -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp -crop_to_cutline -of GTiff /home/felipe/psql/modelagem_priorizacao/apps/apps_hierarchical.tif /home/felipe/psql/modelagem_priorizacao/apps_hierarchical.tif -overwrite
+# 4.2) Converting to shp
+gdal_polygonize.py /home/felipe/psql/modelagem_priorizacao/apps_hierarchical.tif -f "ESRI Shapefile" /home/felipe/psql/modelagem_priorizacao/apps_hierarchical_MA.shp apps_hierarchical_MA DN
 
+# 4.3) After removing the RPA from grid using GIS: rasterizing
+gdal_rasterize -a torestapp -tr 1000 1000 -a_nodata 999 -l grid_ma_Albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/grid_ma_Albers.shp /home/felipe/psql/modelagem_priorizacao/Area_ToRestore_app_albers.tif
+
+#####
+--## 5) layer: Percent remnant considering Riparian area (From Britaldo).
+#####
+--# After GIS processing (merging riparian area with remnant from SOS_MA)
+# 5.1) After considering the RPA using GIS:
+gdal_rasterize -a ForARAPP -tr 1000 1000 -a_nodata 999 -l grid_ma_Albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/grid_ma_Albers.shp /home/felipe/psql/modelagem_priorizacao/apps/ForestArea_app_albers.tif
+
+#####
+## 6) Layer: Carbon stock (From Robin Chazdon)
+#####
+--## 6.1) Resampling to the same grid structure
+gdalwarp -dstnodata -9999 -s_srs EPSG:4326 -t_srs '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs' -tr 1000 -1000 -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 -r "near" -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp  -of GTiff "/home/felipe/psql/modelagem_priorizacao/Carbon/Brazil Atlantic Forest IIS/AGB_20yr_IIS_v6.tif" "/home/felipe/psql/modelagem_priorizacao/Carbon/Brazil Atlantic Forest IIS/AGB_20yr_IIS_v6_Albers.tif" -overwrite
 
 --##layer: SDMs
 
@@ -288,15 +251,134 @@ gzip -rv ~/Projetos/ARF_spatial_planning/ENM/AVES_buffermax2/final -9 -c >/home/
 gzip -rv ~/Projetos/ARF_spatial_planning/ENM/ANFIBIOS_buffermax2/final -9 -c >/home/felipe/psql/Anfibios_sdm.gz
 
 
---#ENVIRONMENTAL DATA
-
---##
-gdalwarp -dstnodata 0 -s_srs EPSG:4326 -t_srs '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs' -tr 300 -300 -te 207854.7456856556236744 -215734.5566306179389358 2738654.7456856556236744 3207565.4433693820610642 -q -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp -crop_to_cutline -of GTiff /home/felipe/Projetos/Norad/Priorizazao_restauracao/niche_models/FinalTSS-w_Abarema_brachystachya_maxent_.gri_.tif /home/felipe/Projetos/Norad/Priorizazao_restauracao/teste_300.tif
-
-gdalwarp -dstnodata 0 -s_srs EPSG:4326 -t_srs '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs' -tr 50 -50 -te 207854.7456856556236744 -215684.5566306179389358 2738804.7456856556236744 3207565.4433693820610642 -q -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp -crop_to_cutline -of GTiff /home/felipe/Projetos/Norad/Priorizazao_restauracao/niche_models/FinalTSS-w_Abarema_brachystachya_maxent_.gri_.tif /home/felipe/Projetos/Norad/Priorizazao_restauracao/teste_50.tif
-
-
 
 #####
-#Rasterizando Mata Atlantica
-gdal_rasterize -a FID -tr 0.01 0.01 -l Bioma_MA1148 -te -74.02056 -29.83056 -33.7539 5.286104 /home/felipe/Projetos/ARF_spatial_planning/Bioma_MA1148.shp /home/felipe/Projetos/ARF_spatial_planning/Bioma_MA1148.tif
+--## Data Base procedure (not working so far)
+#####
+--## layer: raster with total forest area remnant.
+--##Trying to rasterize in postgis --NOT WORKING
+#SELECT ronw_number() over() as id, ST_AsRaster(geom, (select rast from priorizacao_ma.rast_modelo limit 1), '32BF', #perc_remnant, -9999)) 
+#FROM priorizacao_ma.grid_priori_ma limit 10;
+
+#SELECT ST_Union(ST_AsRaster(geom, rast, '32BF', height, -9999)) rast
+#FROM forestcover, (SELECT rast FROM elevation LIMIT 1) rast;
+
+##############
+## Layer: area to be restored
+##############
+cd /home/felipe/psql/modelagem_priorizacao/
+ls *.shp -1
+shp2pgsql -W LATIN1 -s 102033 TeRestore_Albers.shp public.torestore>torestore.sql
+sudo su postgres
+
+--##Importing sql file to DB
+psql -d modelagem -f torestore.sql 
+
+#backuping
+pg_dump modelagem --table=torestore> torestore.backup
+
+#restoring in other DB
+psql -f torestore.backup iis
+
+#Changing the schema
+psql iis
+ALTER TABLE public.torestore SET SCHEMA priorizacao_ma;
+
+#Creating spatial index
+CREATE INDEX torestore_geom_gist ON priorizacao_ma.torestore USING GIST (geom);
+\q
+exit
+
+#Adicionando coluna de perct_restoration
+
+--## NOTE percent retore is thje erase (difference) of grid with area not to restore!!!
+ALTER TABLE priorizacao_ma.grid_priori_ma add column perct_restoration numeric(10,2) NOT NULL DEFAULT(0);
+
+# Criando tabela com área real da MA:
+--drop table priorizacao_ma.ma_real
+CREATE table priorizacao_ma.ma_real AS
+	SELECT g.id as id,
+	row_number() over () as id2,
+	ST_Multi(st_intersection(g.geom,st_transform(ma.geom, 102033)))::geometry(MultiPolygon,102033) as real_geom,
+	st_area(st_intersection(g.geom,st_transform(ma.geom, 102033)))/10000 as realarea_ha
+	FROM priorizacao_ma.grid_priori_ma as g 
+	JOIN biorregioes.ma_1148 as ma
+	on ((g.geom && st_transform(ma.geom, 102033)) and st_intersects(g.geom, st_transform(ma.geom, 102033)));
+--limit 255964
+
+#Adicionando percent restoration area
+update priorizacao_ma.grid_priori_ma as g set perct_restoration = p.perc_rest from (
+WITH grid_ma AS(
+	SELECT g.id as id,
+	st_intersection(g.geom,st_transform(ma.geom, 102033)) as real_geom,
+	st_area(st_intersection(g.geom,st_transform(ma.geom, 102033)))/10000 as realarea_ha
+	FROM priorizacao_ma.grid_priori_ma as g 
+	JOIN biorregioes.ma_1148 as ma
+	on ((g.geom && st_transform(ma.geom, 102033)) and st_intersects(g.geom, st_transform(ma.geom, 102033))) 
+limit 255964)
+select 
+greal.id,
+round((sum((st_area(st_Difference(real_geom, f.geom))/10000)/realarea_ha)*100)::numeric,2)
+ as perc_rest
+	from grid_ma as greal
+	join priorizacao_ma.torestore as f 
+	on ((greal.real_geom && f.geom) 
+	and st_intersects(greal.real_geom, f.geom)) 
+	Group by greal.id
+	) p
+	where g.id=p.id;
+
+
+
+
+	select count(g.gid) FROM priorizacao_ma.grid_priori_ma as g 
+	join priorizacao_ma.torestore as f 
+	on ((g.geom && f.geom) 
+	and st_intersects(g.geom, f.geom))
+#######
+
+#####
+--## 5) layer: Area to be restored considering Riparian area (From Britaldo) as restored.
+#####
+##-- Britaldo raster layer
+--# After britaldo's raster convertion to shp, submitted to modelagem
+cd psql/modelagem_priorizacao/
+--##Converting to sql
+shp2pgsql -W LATIN1 -s 102033 apps_hierarchical_MA.shp public.apps_britaldo>apps_brit.sql
+sudo su postgres
+--#Importing to modelagem db
+psql -f apps_brit.sql -d modelagem
+#backuping
+pg_dump modelagem --table=apps_britaldo> apps_brit.backup
+
+#restoring in other DB
+psql -f apps_brit.backup iis
+
+#Changing the schema
+psql iis
+ALTER TABLE public.apps_britaldo SET SCHEMA priorizacao_ma;
+
+#Adciionando coluna de perct_remnant_app
+alter table priorizacao_ma.grid_priori_ma add column perct_remnant_app numeric(10,2) not null default (0);
+
+#Adicionando percent area
+update priorizacao_ma.grid_priori_ma as g set perct_remnant_app = p.perc_veg_app from (
+select 
+g.gid,
+(round(st_area(st_union(st_intersection(g.geom, geom_albers), st_intersection(g.geom, app.geom)))::numeric/g.area,2))*100 as perc_veg_app 
+	from priorizacao_ma.grid_priori_ma as g 
+	join sos_ma.remanescentes_2011_2012 as f 
+	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers))
+	join priorizacao_ma.apps_britaldo as app 
+	on ((g.geom && app.geom) and st_intersects(g.geom, app.geom)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom, perc_veg_app) p
+	where g.gid=p.gid;
+
+--## Exporting from postgis to shp2
+\q
+exit
+
+pgsql2shp -f /home/felipe/psql/forest_area_app.shp -h localhost -u postgres -P postgres iis priorizacao_ma.grid_priori_ma
+
+--##Rasterizing
+gdal_rasterize -a perct_remnant_app -tr 1000 1000 -a_nodata 999 -l forest_area -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/forest_area.shp /home/felipe/psql/forest_area.tif
+gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.gz

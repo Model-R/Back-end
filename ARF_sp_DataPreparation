@@ -123,7 +123,8 @@ gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.
 #####
 --## Data was produced by Daniel Silva (d.silva@iis-rio.org)
 --## 2.1) Rasterizing vector layer
-gdal_rasterize -a Op_cost -tr 1000 1000 -a_nodata 999 -l Oportunity_cost -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Oportunity_cost.shp /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Oportunity_cost_albers.tif
+gdal_rasterize -a Op_cost -tr 1000 1000 -a_nodata 999 -l Op_Cost_MA -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Op_Cost_MA.shp /home/felipe/psql/modelagem_priorizacao/OportunityCost/uso_MA_shp/Oportunity_cost_albers.tif
+--# Falta inserir no banco de dados
 
 #####
 --## 3) layer: raster with area to be restored.
@@ -250,6 +251,80 @@ gzip -rv ~/Projetos/ARF_spatial_planning/ENM/FLORA_buffermax2/final -9 -c >/home
 gzip -rv ~/Projetos/ARF_spatial_planning/ENM/AVES_buffermax2/final -9 -c >/home/felipe/psql/Aves_sdm.gz
 gzip -rv ~/Projetos/ARF_spatial_planning/ENM/ANFIBIOS_buffermax2/final -9 -c >/home/felipe/psql/Anfibios_sdm.gz
 
+#####
+# Data from Britaldo
+#####
+#Hilltop
+#NEW
+gdalwarp -dstnodata -9999 -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp  -of GTiff "/media/felipe/Seagate Expansion Drive/Banco de dados Geograficos/BKP/Britaldo/codigo_florestal/ForestCodeBalance/Brazil_newFC_hilltops.tif" "/home/felipe/psql/modelagem_priorizacao/BritaldoNewHillTop_MA.tif" -overwrite
+
+#OLD
+gdalwarp -dstnodata -9999 -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 -cutline /home/felipe/Projetos/Analise_area_relevo/Vetores/MataAtlantica_1148_Albers.shp  -of GTiff "/media/felipe/Seagate Expansion Drive/Banco de dados Geograficos/BKP/Britaldo/codigo_florestal/ForestCodeBalance/Brazil_oldFC_hilltops.tif" "/home/felipe/psql/modelagem_priorizacao/BritaldoOldHillTop_MA.tif" -overwrite
+
+####
+# current Forest area + potential app
+####
+# Estimando Area de app e Floresta atual no pixel.
+pgsql2shp -f /home/felipe/psql/forest_area2.shp -h localhost -u postgres -P postgres iis "select * from  sos_ma.remanescentes_2011_2012 as florestas where florestas.legenda LIKE 'Mata%'";
+#EITO NO SIG
+
+gdal_rasterize -a area_appFo -tr 1000 1000 -a_nodata 999 -l grid_ma_Albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/modelagem_priorizacao/grid_ma_Albers.shp /home/felipe/psql/modelagem_priorizacao/Area_appForest_albers.tif
+
+
+
+#####
+--## 7) layer: Area to be restored considering Riparian area (From Britaldo) as restored.
+#####
+##-- Britaldo raster layer
+--# After britaldo's raster convertion to shp, submitted to modelagem
+cd psql/modelagem_priorizacao/
+--##Converting to sql
+shp2pgsql -W LATIN1 -s 102033 apps_hierarchical_MA.shp public.apps_britaldo>apps_brit.sql
+sudo su postgres
+--#Importing to modelagem db
+psql -f apps_brit.sql -d modelagem
+#backuping
+pg_dump modelagem --table=apps_britaldo> apps_brit.backup
+
+#restoring in other DB
+psql -f apps_brit.backup iis
+
+#Changing the schema
+psql iis
+ALTER TABLE public.apps_britaldo SET SCHEMA priorizacao_ma;
+
+#Adciionando coluna de perct_remnant_app
+alter table priorizacao_ma.grid_priori_ma add column perct_remnant_app numeric(10,2) not null default (0);
+
+#Adicionando percent area
+update priorizacao_ma.grid_priori_ma as g set perct_remnant_app = p.perc_veg_app from (
+select 
+g.gid,
+(round(st_area(st_union(st_intersection(g.geom, geom_albers), st_intersection(g.geom, app.geom)))::numeric/g.area,2))*100 as perc_veg_app 
+	from priorizacao_ma.grid_priori_ma as g 
+	join sos_ma.remanescentes_2011_2012 as f 
+	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers))
+	join priorizacao_ma.apps_britaldo as app 
+	on ((g.geom && app.geom) and st_intersects(g.geom, app.geom)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom, perc_veg_app) p
+	where g.gid=p.gid;
+
+--## Exporting from postgis to shp2
+\q
+exit
+
+pgsql2shp -f /home/felipe/psql/forest_area_app.shp -h localhost -u postgres -P postgres iis priorizacao_ma.grid_priori_ma
+
+--##Rasterizing
+gdal_rasterize -a perct_remnant_app -tr 1000 1000 -a_nodata 999 -l forest_area -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/forest_area.shp /home/felipe/psql/forest_area.tif
+gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.gz
+
+
+
+#####
+#-- rasterizing Brazilian states using IBGE code
+#####
+gdal_rasterize -a CODIGOIB1 -tr 1000 1000 -a_nodata 999 -l Estados_Albers -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/Projetos/Base_dados/IBGE/Estados/Estados_Albers.shp /home/felipe/psql/states.tif
+
 
 
 #####
@@ -337,48 +412,3 @@ round((sum((st_area(st_Difference(real_geom, f.geom))/10000)/realarea_ha)*100)::
 	and st_intersects(g.geom, f.geom))
 #######
 
-#####
---## 5) layer: Area to be restored considering Riparian area (From Britaldo) as restored.
-#####
-##-- Britaldo raster layer
---# After britaldo's raster convertion to shp, submitted to modelagem
-cd psql/modelagem_priorizacao/
---##Converting to sql
-shp2pgsql -W LATIN1 -s 102033 apps_hierarchical_MA.shp public.apps_britaldo>apps_brit.sql
-sudo su postgres
---#Importing to modelagem db
-psql -f apps_brit.sql -d modelagem
-#backuping
-pg_dump modelagem --table=apps_britaldo> apps_brit.backup
-
-#restoring in other DB
-psql -f apps_brit.backup iis
-
-#Changing the schema
-psql iis
-ALTER TABLE public.apps_britaldo SET SCHEMA priorizacao_ma;
-
-#Adciionando coluna de perct_remnant_app
-alter table priorizacao_ma.grid_priori_ma add column perct_remnant_app numeric(10,2) not null default (0);
-
-#Adicionando percent area
-update priorizacao_ma.grid_priori_ma as g set perct_remnant_app = p.perc_veg_app from (
-select 
-g.gid,
-(round(st_area(st_union(st_intersection(g.geom, geom_albers), st_intersection(g.geom, app.geom)))::numeric/g.area,2))*100 as perc_veg_app 
-	from priorizacao_ma.grid_priori_ma as g 
-	join sos_ma.remanescentes_2011_2012 as f 
-	on ((g.geom && f.geom_albers) and st_intersects(g.geom, f.geom_albers))
-	join priorizacao_ma.apps_britaldo as app 
-	on ((g.geom && app.geom) and st_intersects(g.geom, app.geom)) where f.legenda LIKE 'Mata%' Group by g.gid, g.geom, perc_veg_app) p
-	where g.gid=p.gid;
-
---## Exporting from postgis to shp2
-\q
-exit
-
-pgsql2shp -f /home/felipe/psql/forest_area_app.shp -h localhost -u postgres -P postgres iis priorizacao_ma.grid_priori_ma
-
---##Rasterizing
-gdal_rasterize -a perct_remnant_app -tr 1000 1000 -a_nodata 999 -l forest_area -te -1654726.4418294357601553 -470314.6068012891337276 3542273.5581705644726753 4210685.3931987108662724 /home/felipe/psql/forest_area.shp /home/felipe/psql/forest_area.tif
-gzip /home/felipe/psql/forest_area.tif -9 -c >/home/felipe/psql/forest_area.tif.gz

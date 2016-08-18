@@ -86,7 +86,6 @@ do_randomForest <- function(sp,
                             models.dir = model.dir,
                             project.model = project.model,
                             projections = projections,
-                            projdata = projdata,#um vector con nombres
                             mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                             ){
     library(randomForest)
@@ -162,7 +161,6 @@ do_SVM <- function(sp,
                    models.dir = model.dir,
                    project.model = project.model,
                    projections = projections,
-                   projdata = projdata,#um vector con nombres
                    mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                    ){
     cat(paste("SVM",'\n'))
@@ -236,7 +234,6 @@ do_maxent <- function(sp,
                       models.dir = model.dir,
                       project.model = project.model,
                       projections = projections,
-                      projdata = projdata,#um vector con nombres
                       mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       ){
     cat(paste("maxent",'\n'))
@@ -313,7 +310,6 @@ do_GLM <- function(sp,
                    models.dir = model.dir,
                    project.model = project.model,
                    projections = projections,
-                   projdata = projdata,#um vector con nombres
                    mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                    ){##
     cat(paste("GLM",'\n'))
@@ -386,7 +382,6 @@ do_domain <- function(sp,
                       models.dir = model.dir,
                       project.model = project.model,
                       projections = projections,
-                      projdata = projdata,#um vector con nombres
                       mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                       ){
     cat(paste("Domain",'\n'))
@@ -454,7 +449,6 @@ do_mahal <- function(sp,
                      models.dir = model.dir,
                      project.model = project.model,
                      projections = projections,
-                     projdata = projdata,#um vector con nombres
                      mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                      ){
     cat(paste("Mahalanobis distance",'\n'))
@@ -531,7 +525,6 @@ do_SVM2 <- function(sp,
                     models.dir = model.dir,
                     project.model = project.model,
                     projections = projections,
-                    projdata = projdata,#um vector con nombres
                     mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
                     ){
     cat(paste("SVM2",'\n'))
@@ -725,7 +718,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                            models.dir = models.dir,
                            project.model = F,
                            projections = NULL,
-                           projdata = NULL,
+                           projdata = projdata,
                            mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thbc)

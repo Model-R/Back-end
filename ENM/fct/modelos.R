@@ -719,7 +719,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                            project.model = F,
                            projections = NULL,
                            projdata = projdata,
-                           mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                           mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thbc)
     }
@@ -734,7 +734,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                           models.dir = models.dir,
                           project.model = F,
                           projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                          mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
 
         eval_df <- rbind(eval_df, thdo)
@@ -750,7 +750,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                           models.dir = models.dir,
                           project.model = F,
                           projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                          mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thmx)
     }
@@ -765,7 +765,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                          models.dir = models.dir,
                          project.model = F,
                          projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                         mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thma)
     }
@@ -781,7 +781,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                          models.dir = models.dir,
                          project.model = F,
                          projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                         mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thglm)
     }
@@ -797,7 +797,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                                 models.dir = models.dir,
                                 project.model = F,
                                 projections = NULL,
-                                mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                                mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thrf)
     }
@@ -814,7 +814,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                          models.dir = models.dir,
                          project.model = F,
                          projections = NULL,
-                         mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                         mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thsvm)
     }
@@ -830,7 +830,7 @@ backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.t
                           models.dir = models.dir,
                           project.model = F,
                           projections = NULL,
-                          mask = NULL# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
+                          mask = mask# a SpatialPolygonsDataFrame layer to mask and crop the predicted model
         )
         eval_df <- rbind(eval_df, thsvm2)
     }

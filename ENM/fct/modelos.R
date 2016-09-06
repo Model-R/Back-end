@@ -36,9 +36,9 @@ do_bioclim <- function(sp,
         bc_cut <- cropModel(bc_cut , mask)
 
     }
-    writeRaster(x=bc_cont,filename=paste0(models.dir,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=bc_bin,filename=paste0(models.dir,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=bc_cut,filename=paste0(models.dir,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=bc_cont,filename=paste0(models.dir,"/",sp,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=bc_bin,filename=paste0(models.dir,"/",sp,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=bc_cut,filename=paste0(models.dir,"/",sp,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/Bioclim",sp,"_",i,"%03d.png"))
     plot(bc_cont,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
@@ -62,9 +62,9 @@ do_bioclim <- function(sp,
                 bc_proj_bin <- cropModel(bc_proj_bin , mask)
                 bc_proj_cut <- cropModel(bc_proj_cut , mask)
             }
-            writeRaster(x=bc_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=bc_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=bc_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=bc_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=bc_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=bc_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/BioClim_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
             png(filename=paste0(models.dir,"/",sp,"/",proj,"/Bioclim",sp,"_",i,"%03d.png"))
             plot(bc_proj,main=paste("Bioclim raw","\n","AUC =", round(ebc@auc,2),'-',"TSS =",round(bc_TSS,2)))
@@ -115,9 +115,9 @@ do_randomForest <- function(sp,
         rf_bin <- cropModel(rf_bin , mask)
         rf_cut <- cropModel(rf_cut , mask)
     }
-    writeRaster(x=rf_cont,filename=paste0(models.dir,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=rf_bin,filename=paste0(models.dir,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=rf_cut,filename=paste0(models.dir,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=rf_cont,filename=paste0(models.dir,"/",sp,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=rf_bin,filename=paste0(models.dir,"/",sp,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=rf_cut,filename=paste0(models.dir,"/",sp,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/rf",sp,"_",i,"%03d.png"))
     plot(rf_cont,main=paste("RF raw","\n","AUC =", round(erf@auc,2),'-',"TSS =",round(rf_TSS,2)))
@@ -141,9 +141,9 @@ do_randomForest <- function(sp,
                 rf_proj_bin <- cropModel(rf_proj_bin , mask)
                 rf_proj_cut <- cropModel(rf_proj_cut , mask)
             }
-            writeRaster(x=rf_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=rf_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=rf_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=rf_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=rf_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=rf_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/rf_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }
@@ -190,9 +190,9 @@ do_SVM <- function(sp,
         svm_cut <- cropModel(svm_cut , mask)
     }
 
-    writeRaster(x=svm_cont,filename=paste0(models.dir,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm_bin,filename=paste0(models.dir,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm_cut,filename=paste0(models.dir,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm_cont,filename=paste0(models.dir,"/",sp,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=svm_bin,filename=paste0(models.dir,"/",sp,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=svm_cut,filename=paste0(models.dir,"/",sp,"/svm_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/svm",sp,"_",i,"%03d.png"))
     plot(svm_cont,main=paste("SVM raw","\n","AUC =", round(esvm@auc,2),'-',"TSS =",round(svm_TSS,2)))
@@ -216,9 +216,9 @@ do_SVM <- function(sp,
                 svm_proj_bin <- cropModel(svm_proj_bin , mask)
                 svm_proj_cut <- cropModel(svm_proj_cut , mask)
             }
-            writeRaster(x=svm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=svm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=svm_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/svm_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }
@@ -266,9 +266,9 @@ do_maxent <- function(sp,
         mx_bin <- cropModel(mx_bin , mask)
         mx_cut <- cropModel(mx_cut , mask)
     }
-    writeRaster(x=mx_cont,filename=paste0(models.dir,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=mx_bin,filename=paste0(models.dir,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=mx_cut,filename=paste0(models.dir,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=mx_cont,filename=paste0(models.dir,"/",sp,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=mx_bin,filename=paste0(models.dir,"/",sp,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=mx_cut,filename=paste0(models.dir,"/",sp,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/maxent",sp,"_",i,"%03d.png"))
     plot(mx_cont,main=paste("Maxent raw","\n","AUC =", round(emx@auc,2),'-',"TSS =",round(mx_TSS,2)))
@@ -291,9 +291,9 @@ do_maxent <- function(sp,
                 mx_proj_bin <- cropModel(mx_proj_bin , mask)
                 mx_proj_cut <- cropModel(mx_proj_cut , mask)
             }
-            writeRaster(x=mx_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=mx_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=mx_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=mx_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=mx_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=mx_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/maxent_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }
@@ -338,9 +338,9 @@ do_GLM <- function(sp,
         glm_bin <- cropModel(glm_bin , mask)
         glm_cut <- cropModel(glm_cut , mask)
     }
-    writeRaster(x=glm_cont,filename=paste0(models.dir,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=glm_bin,filename=paste0(models.dir,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=glm_cut,filename=paste0(models.dir,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=glm_cont,filename=paste0(models.dir,"/",sp,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=glm_bin,filename=paste0(models.dir,"/",sp,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=glm_cut,filename=paste0(models.dir,"/",sp,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/glm",sp,"_",i,"%03d.png"))
     plot(glm_cont,main=paste("GLM raw","\n","AUC =", round(eglm@auc,2),'-',"TSS =",round(glm_TSS,2)))
@@ -364,9 +364,9 @@ do_GLM <- function(sp,
                 glm_proj_bin <- cropModel(glm_proj_bin , mask)
                 glm_proj_cut <- cropModel(glm_proj_cut , mask)
             }
-            writeRaster(x=glm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=glm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=glm_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=glm_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=glm_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=glm_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/glm_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }
@@ -405,9 +405,9 @@ do_domain <- function(sp,
         do_bin <- cropModel(do_bin , mask)
         do_cut <- cropModel(do_cut , mask)
     }
-    writeRaster(x=do_cont,filename=paste0(models.dir,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=do_bin,filename=paste0(models.dir,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=do_cut,filename=paste0(models.dir,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=do_cont,filename=paste0(models.dir,"/",sp,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=do_bin,filename=paste0(models.dir,"/",sp,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=do_cut,filename=paste0(models.dir,"/",sp,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/Domain",sp,"_",i,"%03d.png"))
     plot(do_cont,main=paste("Domain raw","\n","AUC =", round(edo@auc,2),'-',"TSS =",round(do_TSS,2)))
@@ -431,9 +431,9 @@ do_domain <- function(sp,
                 do_proj_bin <- cropModel(do_proj_bin , mask)
                 do_proj_cut <- cropModel(do_proj_cut , mask)
             }
-            writeRaster(x=do_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=do_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=do_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=do_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=do_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/Domain_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }
@@ -478,9 +478,9 @@ do_mahal <- function(sp,
             ma_bin <- cropModel(ma_bin , mask)
             ma_cut <- cropModel(ma_cut , mask)
         }
-        writeRaster(x=ma_cont,filename=paste0(models.dir,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=ma_bin,filename=paste0(models.dir,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-        writeRaster(x=ma_cut,filename=paste0(models.dir,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+        writeRaster(x=ma_cont,filename=paste0(models.dir,"/",sp,"/Mahal_cont_",sp,"_",i,".tif"),overwrite=T)
+        writeRaster(x=ma_bin,filename=paste0(models.dir,"/",sp,"/Mahal_bin_",sp,"_",i,".tif"),overwrite=T)
+        writeRaster(x=ma_cut,filename=paste0(models.dir,"/",sp,"/Mahal_cut_",sp,"_",i,".tif"),overwrite=T)
 
         png(filename=paste0(models.dir,"/",sp,"/Mahal",sp,"_",i,"%03d.png"))
         plot(ma_cont,main=paste("Mahal raw","\n","AUC =", round(ema@auc,2),'-',"TSS =",round(ma_TSS,2)))
@@ -504,9 +504,9 @@ do_mahal <- function(sp,
                     ma_proj_bin <- cropModel(ma_proj_bin , mask)
                     ma_proj_cut <- cropModel(ma_proj_cut , mask)
                 }
-                writeRaster(x=ma_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-                writeRaster(x=ma_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-                writeRaster(x=ma_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+                writeRaster(x=ma_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_cont_",sp,"_",i,".tif"),overwrite=T)
+                writeRaster(x=ma_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_bin_",sp,"_",i,".tif"),overwrite=T)
+                writeRaster(x=ma_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/mahal_cut_",sp,"_",i,".tif"),overwrite=T)
                 rm(data2)
             }
         }
@@ -553,9 +553,9 @@ do_SVM2 <- function(sp,
 	    svm2_bin <- cropModel(svm2_bin , mask)
 	    svm2_cut <- cropModel(svm2_cut , mask)
     }
-    writeRaster(x=svm2_cont,filename=paste0(models.dir,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm2_bin,filename=paste0(models.dir,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-    writeRaster(x=svm2_cut,filename=paste0(models.dir,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+    writeRaster(x=svm2_cont,filename=paste0(models.dir,"/",sp,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=svm2_bin,filename=paste0(models.dir,"/",sp,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
+    writeRaster(x=svm2_cut,filename=paste0(models.dir,"/",sp,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
 
     png(filename=paste0(models.dir,"/",sp,"/svm2",sp,"_",i,"%03d.png"))
     plot(svm2_cont,main=paste("SVM2 raw","\n","AUC =", round(esvm2@auc,2),'-',"TSS =",round(svm2_TSS,2)))
@@ -578,9 +578,9 @@ do_SVM2 <- function(sp,
 		    svm2_proj_bin <- cropModel(svm2_proj_bin , mask)
 		    svm2_proj_cut <- cropModel(svm2_proj_cut , mask)
             }
-            writeRaster(x=svm2_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm2_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
-            writeRaster(x=svm2_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T, datatype="INT1U")
+            writeRaster(x=svm2_proj,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_cont_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=svm2_proj_bin,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_bin_",sp,"_",i,".tif"),overwrite=T)
+            writeRaster(x=svm2_proj_cut,filename=paste0(models.dir,"/",sp,"/",proj,"/svm2_cut_",sp,"_",i,".tif"),overwrite=T)
             rm(data2)
         }
     }

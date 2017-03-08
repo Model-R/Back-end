@@ -109,9 +109,10 @@ finalModel <- function(sp,
                 if (exists("final")) {
                     #plot(final)
                     #Escribe final
+                    rasterOptions(setfileext = F)
                     writeRaster(
                         x = final,filename = paste0(
-                            models.dir,"/",sp,"/",final.dir,"/",names(final),sp,algo
+                            models.dir,"/",sp,"/",final.dir,"/",names(final),sp,algo,".tif"
                         ),bylayer = T,overwrite = T,format = "GTiff"
                     )
 

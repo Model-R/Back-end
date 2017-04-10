@@ -704,7 +704,7 @@ dismo.mod <- function(sp,
   # extrai as coordenadas de cada especie
   coord <- occs[occs$sp == sp, c("lon", "lat")]
   n <- nrow(coord)
-  n.back <- n * 2  #descomentado
+
   # tabela de valores
   presvals <- raster::extract(predictors, coord)
   

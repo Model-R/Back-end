@@ -15,6 +15,8 @@ do_bioclim <- function(sp,
 		       n.back = 500) {
   cat(paste("Bioclim", "\n"))
 
+  if (file.exists(paste0(models.dir)) == FALSE)
+    dir.create(paste0(models.dir))
   if (file.exists(paste0(models.dir, "/", sp)) == FALSE) 
     dir.create(paste0(models.dir, "/", sp))
   if (project.model == T) {

@@ -11,7 +11,8 @@ do_maxent <- function(sp,
 		      models.dir = model.dir,
 		      project.model = project.model,
 		      projections = projections,
-		      mask = mask) {
+		      mask = mask,
+		      n.back = 500) {
   cat(paste("Maxent", "\n"))
 
   if (file.exists(paste0(models.dir, "/", sp)) == FALSE) 
@@ -23,7 +24,6 @@ do_maxent <- function(sp,
     }
   }
 
-  n.back <- nrow(coordinates) * 2
   # tabela de valores
   presvals <- raster::extract(predictors, coordinates)
   

@@ -12,7 +12,7 @@ do_maxent <- function(sp,
 		      project.model = project.model,
 		      projections = projections,
 		      mask = mask) {
-  cat(paste("Domain", "\n"))
+  cat(paste("Maxent", "\n"))
 
   if (file.exists(paste0(models.dir, "/", sp)) == FALSE) 
     dir.create(paste0(models.dir, "/", sp))

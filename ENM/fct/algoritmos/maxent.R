@@ -31,7 +31,7 @@ do_maxent <- function(sp,
     set.seed(seed + 2)
     backgr <- randomPoints(predictors, n.back)
   } else {
-    source("../fct/createBuffer.R")
+    source("../../fct/createBuffer.R")
     backgr <- createBuffer(coord_ = coordinates, n.back_ = n.back, buffer.type_ = buffer.type, 
       occs_ = occs, sp_ = sp, seed_ = seed)
   }
@@ -95,7 +95,7 @@ do_maxent <- function(sp,
       sp, "_", i, "_maxent.txt"))
     
     if (class(mask) == "SpatialPolygonsDataFrame") {
-      source("../fct/cropModel.R")
+      source("../../fct/cropModel.R")
       mx_cont <- cropModel(mx_cont, mask)
       mx_bin <- cropModel(mx_bin, mask)
       mx_cut <- cropModel(mx_cut, mask)
@@ -126,7 +126,7 @@ do_maxent <- function(sp,
         mx_proj_cut <- mx_proj_bin * mx_proj
         # Normaliza o modelo cut do_proj_cut <- do_proj_cut/maxValue(do_proj_cut)
         if (class(mask) == "SpatialPolygonsDataFrame") {
-          source("../fct/cropModel.R")
+          source("../../fct/cropModel.R")
           mx_proj <- cropModel(mx_proj, mask)
           mx_proj_bin <- cropModel(mx_proj_bin, mask)
           mx_proj_cut <- cropModel(mx_proj_cut, mask)

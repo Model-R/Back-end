@@ -31,7 +31,7 @@ do_bioclim <- function(sp,
     set.seed(seed + 2)
     backgr <- randomPoints(predictors, n.back)
   } else {
-    source("./fct/createBuffer.R")
+    source("../../fct/createBuffer.R")
     backgr <- createBuffer(coord_ = coordinates, n.back_ = n.back, buffer.type_ = buffer.type, 
       occs_ = occs, sp_ = sp, seed_ = seed)
   }
@@ -95,7 +95,7 @@ do_bioclim <- function(sp,
       sp, "_", i, "_bioclim.txt"))
     
     if (class(mask) == "SpatialPolygonsDataFrame") {
-    source("./fct/cropModel.R")
+    source("../../fct/cropModel.R")
     bc_cont <- cropModel(bc_cont, mask)
     bc_bin <- cropModel(bc_bin, mask)
     bc_cut <- cropModel(bc_cut, mask)

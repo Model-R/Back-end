@@ -95,7 +95,7 @@ do_domain <- function(sp,
       sp, "_", i, "_domain.txt"))
     
     if (class(mask) == "SpatialPolygonsDataFrame") {
-      source("../fct/cropModel.R")
+      source("../../fct/cropModel.R")
       do_cont <- cropModel(do_cont, mask)
       do_bin <- cropModel(do_bin, mask)
       do_cut <- cropModel(do_cut, mask)

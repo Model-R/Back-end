@@ -11,7 +11,7 @@ mascara <- readOGR(dsn="/home/guilherme/repos/ARF_spatial_planning/ENM/data", la
 
 coordenadas <- read.csv("/home/guilherme/repos/ARF_spatial_planning/ENM/data/FLORA_occs_final.csv")
 
-especie <- "Casearia sylvestris Sw."
+especie <- "Zygia latifolia (L.) Fawc. & Rendle"
 
 ocorrencias <- coordenadas[coordenadas$sp == especie, c("lon", "lat")]
 

@@ -1,17 +1,17 @@
-createBuffer <- function(coord_ = coord, sp_ = sp, occs_ = occs, seed_ = seed, n.back_ = n.back, 
-  buffer.type_ = "mean") {
+createBuffer <- function(coord, sp, occs, seed, n.back, 
+  buffer.type = "mean", predictors) {
   # Transformando em spatial points
-  coordinates(coord_) <- ~lon + lat
+  coordinates(coord) <- ~lon + lat
   
-  if (buffer.type_ == "mean") 
-    dist.buf <- mean(spDists(x = coord_, longlat = FALSE, segments = TRUE))
-  if (buffer.type_ == "max") 
-    dist.buf <- max(spDists(x = coord_, longlat = FALSE, segments = TRUE))
+  if (buffer.type == "mean") 
+    dist.buf <- mean(spDists(x = coord, longlat = FALSE, segments = TRUE))
+  if (buffer.type == "max") 
+    dist.buf <- max(spDists(x = coord, longlat = FALSE, segments = TRUE))
   
-  buffer <- raster::buffer(coord_, width = dist.buf, dissolve = TRUE)
+  buffer <- raster::buffer(coord, width = dist.buf, dissolve = TRUE)
   
   # Transformando coords de novo em matriz para rodar resto script
-  coord_ <- occs_[occs_$sp == sp_, c("lon", "lat")]
+  coord <- occs[occs$sp == sp, c("lon", "lat")]
   
   # Transformando em spatial polygon data frame
   buffer <- SpatialPolygonsDataFrame(buffer, data = as.data.frame(buffer@plotOrder), 
@@ -31,8 +31,8 @@ createBuffer <- function(coord_ = coord, sp_ = sp, occs_ = occs, seed_ = seed, n
   
   
   # Gerando pontos aleatorios no buffer
-  set.seed(seed_ + 2)
-  backgr <- randomPoints(r_buffer, n.back_)
+  set.seed(seed + 2)
+  backgr <- randomPoints(r_buffer, n.back)
   rm(buffer)
   gc()
   return(backgr)

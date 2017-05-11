@@ -713,8 +713,8 @@ dismo.mod <- function(sp,
     backgr <- randomPoints(predictors, n.back)
   } else {
     source("./fct/createBuffer.R")
-    backgr <- createBuffer(coord_ = coord, n.back_ = n.back, buffer.type_ = buffer.type, 
-      occs_ = occs, sp_ = sp, seed_ = seed)
+    backgr <- createBuffer(coord = coord, n.back = n.back, buffer.type = buffer.type, 
+      occs = occs, sp = sp, seed = seed, predictors = predictors)
   }
   
   colnames(backgr) <- c("lon", "lat")

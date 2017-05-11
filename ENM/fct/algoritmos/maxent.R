@@ -31,8 +31,8 @@ do_maxent <- function(sp,
   
   if (buffer %in% c("mean", "max")) {
     source("../../fct/createBuffer.R")
-    backgr <- createBuffer(coord_ = coordinates, n.back_ = n.back, buffer.type_ = buffer.type,
-      occs_ = occs, sp_ = sp, seed_ = seed)
+    backgr <- createBuffer(coord = coordinates, n.back = n.back, buffer.type = buffer,
+      occs = coordinates, sp = sp, seed = seed, predictors = predictors)
   } else {
     set.seed(seed + 2)
     backgr <- randomPoints(predictors, n.back)
